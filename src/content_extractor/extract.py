@@ -10,15 +10,19 @@ batch (D-07, QUAL-01).  Errors are printed to stderr (D-09).
 
 from __future__ import annotations
 
+import logging
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from content_extractor.analysis import AnalysisError, analyze_content
 from content_extractor.config import ExtractorConfig
 from content_extractor.loader import load_content_item
-from content_extractor.models import ExtractionResult
+from content_extractor.models import AnalysisResult, ExtractionResult
 from content_extractor.output import is_extracted, write_extraction_output
 from content_extractor.router import get_extractor
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -66,9 +70,28 @@ def extract_content(
     # Run extraction
     result = adapter.extract(content_dir, config)
 
+    # Run LLM analysis
+    try:
+        analysis = analyze_content(
+            raw_text=result.raw_text,
+            content_id=result.content_id,
+            content_type=result.content_type,
+            config=config,
+        )
+    except AnalysisError as exc:
+        logger.warning(
+            "Analysis failed for %s, using placeholder: %s",
+            result.content_id,
+            exc,
+        )
+        analysis = AnalysisResult(
+            content_id=result.content_id,
+            content_type=result.content_type,
+        )
+
     # Write output files
     write_extraction_output(
-        content_dir, result, item, force=config.force_reprocess
+        content_dir, result, item, force=config.force_reprocess, analysis=analysis
     )
 
     return result
