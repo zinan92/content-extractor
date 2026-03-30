@@ -79,7 +79,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04-01-PLAN.md -- Vision module (image preprocessing + Claude API), ImageExtractor adapter, shared text utilities, Chinese OCR tests
+- [x] 04-01-PLAN.md -- Vision module (image preprocessing + Claude API), ImageExtractor adapter, shared text utilities, Chinese OCR tests
 
 ### Phase 5: Video Core
 **Goal**: Video content is transcribed into timestamped text segments using FFmpeg + faster-whisper

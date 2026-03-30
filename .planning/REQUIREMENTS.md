@@ -29,9 +29,9 @@
 
 ### Image Extraction
 
-- [ ] **IMG-01**: Send image to Claude vision for OCR + visual description in a single call
-- [ ] **IMG-02**: Handle Chinese text overlays common on Xiaohongshu images
-- [ ] **IMG-03**: Return structured result with `ocr_text`, `visual_description`, and `confidence`
+- [x] **IMG-01**: Send image to Claude vision for OCR + visual description in a single call
+- [x] **IMG-02**: Handle Chinese text overlays common on Xiaohongshu images
+- [x] **IMG-03**: Return structured result with `ocr_text`, `visual_description`, and `confidence`
 
 ### Video Extraction
 
@@ -123,9 +123,9 @@
 | LLM-02 | Phase 3: LLM Infrastructure | Complete |
 | LLM-03 | Phase 3: LLM Infrastructure | Complete |
 | LLM-04 | Phase 3: LLM Infrastructure | Complete |
-| IMG-01 | Phase 4: Image Adapter | Pending |
-| IMG-02 | Phase 4: Image Adapter | Pending |
-| IMG-03 | Phase 4: Image Adapter | Pending |
+| IMG-01 | Phase 4: Image Adapter | Complete |
+| IMG-02 | Phase 4: Image Adapter | Complete |
+| IMG-03 | Phase 4: Image Adapter | Complete |
 | VID-01 | Phase 5: Video Core | Complete |
 | VID-03 | Phase 5: Video Core | Complete |
 | VID-04 | Phase 5: Video Core | Complete |
