@@ -96,7 +96,7 @@
 |---------|--------|
 | Real-time streaming transcription | All source content already downloaded — offline batch is simpler |
 | HTTP API / FastAPI service | Pipeline uses Python imports directly; HTTP adds unnecessary overhead |
-| Translation (Chinese↔English) | Translation belongs in content-rewriter, not extraction |
+| Translation (Chinese<>English) | Translation belongs in content-rewriter, not extraction |
 | Custom fine-tuned Whisper model | Marginal improvement over large-v3; massive maintenance cost |
 | PDF/document extraction | Target platforms produce video/image/article/gallery only |
 | Full video frame analysis | Extremely expensive; cover + metadata sufficient for short-form |
@@ -106,53 +106,53 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
-| FOUND-05 | Phase 1 | Pending |
-| FOUND-06 | Phase 1 | Pending |
-| ARTC-01 | Phase 2 | Pending |
-| ARTC-02 | Phase 2 | Pending |
-| ARTC-03 | Phase 2 | Pending |
-| LLM-01 | Phase 3 | Pending |
-| LLM-02 | Phase 3 | Pending |
-| LLM-03 | Phase 3 | Pending |
-| LLM-04 | Phase 3 | Pending |
-| IMG-01 | Phase 4 | Pending |
-| IMG-02 | Phase 4 | Pending |
-| IMG-03 | Phase 4 | Pending |
-| VID-01 | Phase 5 | Pending |
-| VID-02 | Phase 5 | Pending |
-| VID-03 | Phase 5 | Pending |
-| VID-04 | Phase 5 | Pending |
-| VID-05 | Phase 5 | Pending |
-| VID-06 | Phase 5 | Pending |
-| VID-07 | Phase 5 | Pending |
-| GLRY-01 | Phase 6 | Pending |
-| GLRY-02 | Phase 6 | Pending |
-| GLRY-03 | Phase 6 | Pending |
-| ANLYS-01 | Phase 7 | Pending |
-| ANLYS-02 | Phase 7 | Pending |
-| ANLYS-03 | Phase 7 | Pending |
-| ANLYS-04 | Phase 7 | Pending |
-| ANLYS-05 | Phase 7 | Pending |
-| ANLYS-06 | Phase 7 | Pending |
-| CLI-01 | Phase 8 | Pending |
-| CLI-02 | Phase 8 | Pending |
-| CLI-03 | Phase 8 | Pending |
-| CLI-04 | Phase 8 | Pending |
-| CLI-05 | Phase 8 | Pending |
-| QUAL-01 | Phase 1 | Pending |
-| QUAL-02 | Phase 1 | Pending |
-| QUAL-03 | Phase 1 | Pending |
-| QUAL-04 | Phase 1 | Pending |
+| FOUND-01 | Phase 1: Foundation & Data Models | Pending |
+| FOUND-02 | Phase 1: Foundation & Data Models | Pending |
+| FOUND-03 | Phase 1: Foundation & Data Models | Pending |
+| FOUND-04 | Phase 1: Foundation & Data Models | Pending |
+| FOUND-05 | Phase 1: Foundation & Data Models | Pending |
+| FOUND-06 | Phase 1: Foundation & Data Models | Pending |
+| QUAL-01 | Phase 1: Foundation & Data Models | Pending |
+| QUAL-02 | Phase 1: Foundation & Data Models | Pending |
+| QUAL-03 | Phase 1: Foundation & Data Models | Pending |
+| QUAL-04 | Phase 1: Foundation & Data Models | Pending |
+| ARTC-01 | Phase 2: Article Adapter | Pending |
+| ARTC-02 | Phase 2: Article Adapter | Pending |
+| ARTC-03 | Phase 2: Article Adapter | Pending |
+| LLM-01 | Phase 3: LLM Infrastructure | Pending |
+| LLM-02 | Phase 3: LLM Infrastructure | Pending |
+| LLM-03 | Phase 3: LLM Infrastructure | Pending |
+| LLM-04 | Phase 3: LLM Infrastructure | Pending |
+| IMG-01 | Phase 4: Image Adapter | Pending |
+| IMG-02 | Phase 4: Image Adapter | Pending |
+| IMG-03 | Phase 4: Image Adapter | Pending |
+| VID-01 | Phase 5: Video Core | Pending |
+| VID-03 | Phase 5: Video Core | Pending |
+| VID-04 | Phase 5: Video Core | Pending |
+| VID-05 | Phase 5: Video Core | Pending |
+| VID-02 | Phase 6: Video Quality | Pending |
+| VID-06 | Phase 6: Video Quality | Pending |
+| VID-07 | Phase 6: Video Quality | Pending |
+| GLRY-01 | Phase 7: Gallery Adapter | Pending |
+| GLRY-02 | Phase 7: Gallery Adapter | Pending |
+| GLRY-03 | Phase 7: Gallery Adapter | Pending |
+| ANLYS-01 | Phase 8: LLM Analysis | Pending |
+| ANLYS-02 | Phase 8: LLM Analysis | Pending |
+| ANLYS-03 | Phase 8: LLM Analysis | Pending |
+| ANLYS-04 | Phase 8: LLM Analysis | Pending |
+| ANLYS-05 | Phase 8: LLM Analysis | Pending |
+| ANLYS-06 | Phase 8: LLM Analysis | Pending |
+| CLI-01 | Phase 9: CLI & Library API | Pending |
+| CLI-02 | Phase 9: CLI & Library API | Pending |
+| CLI-03 | Phase 9: CLI & Library API | Pending |
+| CLI-04 | Phase 9: CLI & Library API | Pending |
+| CLI-05 | Phase 9: CLI & Library API | Pending |
 
 **Coverage:**
 - v1 requirements: 39 total
-- Mapped to phases: 39
-- Unmapped: 0 ✓
+- Mapped to phases: 39 (across 9 phases)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-30*
-*Last updated: 2026-03-30 after initial definition*
+*Last updated: 2026-03-30 after roadmap creation (9-phase structure)*
