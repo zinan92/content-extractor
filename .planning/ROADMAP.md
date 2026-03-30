@@ -146,11 +146,11 @@ Plans:
   2. `content-extractor extract-batch /path/to/output/` scans and extracts all ContentItems with a progress bar
   3. Batch mode shows an error summary at the end listing all failed items
   4. Python code can `from content_extractor import extract, extract_batch` and call them programmatically
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
+- [ ] 09-01-PLAN.md -- Typer CLI with extract and extract-batch commands, Rich progress bar, error summary table
+- [ ] 09-02-PLAN.md -- Python library API polish (extract alias, ExtractionResult export, contract tests)
 
 ## Progress
 
