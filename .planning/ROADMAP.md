@@ -117,10 +117,10 @@ Plans:
   1. Each image in a gallery is individually described using the Image adapter
   2. Images are batched into minimal API calls to stay within rate limits
   3. Per-image descriptions are synthesized into a coherent gallery narrative via LLM
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 07-01: TBD
+- [ ] 07-01-PLAN.md -- GalleryExtractor with batched vision calls, per-image error isolation, LLM narrative synthesis, integration test updates
 
 ### Phase 8: LLM Analysis
 **Goal**: Extracted text (from any content type) is analyzed for themes, viewpoints, sentiment, and actionable takeaways
@@ -164,8 +164,8 @@ Phase 4 depends on 1+3. Phase 6 depends on 5. Phase 7 depends on 4. Phase 8 depe
 |-------|----------------|--------|-----------|
 | 1. Foundation & Data Models | 3/3 | Complete | - |
 | 2. Article Adapter | 1/1 | Complete | - |
-| 3. LLM Infrastructure | 0/1 | Not started | - |
-| 4. Image Adapter | 0/1 | Not started | - |
+| 3. LLM Infrastructure | 1/1 | Complete | - |
+| 4. Image Adapter | 1/1 | Complete | - |
 | 5. Video Core | 2/2 | Complete   | 2026-03-30 |
 | 6. Video Quality | 0/1 | Not started | - |
 | 7. Gallery Adapter | 0/1 | Not started | - |
