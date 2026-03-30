@@ -28,6 +28,10 @@ from content_extractor.video.ffmpeg import (
     normalize_audio,
     probe_audio_stream,
 )
+from content_extractor.video.hallucination import (
+    check_segment_suspicious,
+    check_transcript_hallucinations,
+)
 from content_extractor.video.transcribe import TranscriptionResult, transcribe_audio
 
 logger = logging.getLogger(__name__)
@@ -174,20 +178,41 @@ class VideoExtractor:
                 platform_metadata=platform_meta,
             )
 
+        # Flag suspicious segments via hallucination heuristics
+        flagged_segments = tuple(
+            seg.model_copy(update={"is_suspicious": True})
+            if check_segment_suspicious(seg)
+            else seg
+            for seg in segments
+        )
+
+        # Generate hallucination warnings
+        warnings = check_transcript_hallucinations(
+            flagged_segments, speech_ratio
+        )
+
         # Build transcript
-        full_text = " ".join(seg.text for seg in segments)
+        full_text = " ".join(seg.text for seg in flagged_segments)
         avg_confidence = (
-            sum(s.confidence for s in segments) / len(segments)
-            if segments
+            sum(s.confidence for s in flagged_segments) / len(flagged_segments)
+            if flagged_segments
             else 0.0
         )
+
+        # Halve confidence if all segments are suspicious
+        if (
+            flagged_segments
+            and all(s.is_suspicious for s in flagged_segments)
+        ):
+            avg_confidence = avg_confidence / 2.0
+
         word_count = _compute_word_count(full_text)
 
         transcript = Transcript(
             content_id=item.content_id,
             content_type="video",
             language="zh",
-            segments=segments,
+            segments=flagged_segments,
             full_text=full_text,
         )
 
@@ -196,6 +221,7 @@ class VideoExtractor:
             language="zh",
             word_count=word_count,
             processing_time_seconds=elapsed,
+            hallucination_warnings=warnings,
         )
 
         return ExtractionResult(

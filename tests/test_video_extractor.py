@@ -439,3 +439,156 @@ class TestVideoExtractor:
 
         assert result.quality.confidence == 0.0
         assert result.platform_metadata.get("low_speech_ratio") is not None
+
+    def test_suspicious_segments_flagged(
+        self,
+        content_dir: Path,
+        config: ExtractorConfig,
+        probe_with_audio: AudioProbeResult,
+    ) -> None:
+        """Low confidence segments get is_suspicious=True."""
+        extractor = VideoExtractor()
+
+        low_conf_result = TranscriptionResult(
+            segments=(
+                TranscriptSegment(
+                    text="ok text", start=0.0, end=2.0, confidence=0.2
+                ),
+                TranscriptSegment(
+                    text="good text", start=2.0, end=4.0, confidence=0.9
+                ),
+            ),
+            speech_ratio=0.8,
+            duration_seconds=60.0,
+        )
+
+        def mock_extract_audio(video_path: Path, output_path: Path) -> Path:
+            output_path.write_bytes(b"fake-wav")
+            return output_path
+
+        with (
+            patch(
+                "content_extractor.adapters.video.probe_audio_stream",
+                return_value=probe_with_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.extract_audio",
+                side_effect=mock_extract_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=lambda inp, out: out,
+            ),
+            patch(
+                "content_extractor.adapters.video.transcribe_audio",
+                return_value=low_conf_result,
+            ),
+        ):
+            result = extractor.extract(content_dir, config)
+
+        assert result.transcript is not None
+        assert result.transcript.segments[0].is_suspicious is True
+        assert result.transcript.segments[1].is_suspicious is False
+        assert len(result.quality.hallucination_warnings) > 0
+
+    def test_hallucination_warnings_populated(
+        self,
+        content_dir: Path,
+        config: ExtractorConfig,
+        probe_with_audio: AudioProbeResult,
+    ) -> None:
+        """Hallucination warnings appear in QualityMetadata."""
+        extractor = VideoExtractor()
+
+        low_conf_result = TranscriptionResult(
+            segments=(
+                TranscriptSegment(
+                    text="text", start=0.0, end=1.0, confidence=0.2
+                ),
+                TranscriptSegment(
+                    text="more", start=1.0, end=2.0, confidence=0.3
+                ),
+            ),
+            speech_ratio=0.8,
+            duration_seconds=60.0,
+        )
+
+        def mock_extract_audio(video_path: Path, output_path: Path) -> Path:
+            output_path.write_bytes(b"fake-wav")
+            return output_path
+
+        with (
+            patch(
+                "content_extractor.adapters.video.probe_audio_stream",
+                return_value=probe_with_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.extract_audio",
+                side_effect=mock_extract_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=lambda inp, out: out,
+            ),
+            patch(
+                "content_extractor.adapters.video.transcribe_audio",
+                return_value=low_conf_result,
+            ),
+        ):
+            result = extractor.extract(content_dir, config)
+
+        assert len(result.quality.hallucination_warnings) > 0
+        # Should have confidence warning
+        assert any(
+            "confidence" in w.lower()
+            for w in result.quality.hallucination_warnings
+        )
+
+    def test_all_suspicious_halves_confidence(
+        self,
+        content_dir: Path,
+        config: ExtractorConfig,
+        probe_with_audio: AudioProbeResult,
+    ) -> None:
+        """When all segments suspicious, confidence is halved."""
+        extractor = VideoExtractor()
+
+        all_sus_result = TranscriptionResult(
+            segments=(
+                TranscriptSegment(
+                    text="a", start=0.0, end=1.0, confidence=0.2
+                ),
+                TranscriptSegment(
+                    text="b", start=1.0, end=2.0, confidence=0.3
+                ),
+            ),
+            speech_ratio=0.8,
+            duration_seconds=60.0,
+        )
+
+        def mock_extract_audio(video_path: Path, output_path: Path) -> Path:
+            output_path.write_bytes(b"fake-wav")
+            return output_path
+
+        with (
+            patch(
+                "content_extractor.adapters.video.probe_audio_stream",
+                return_value=probe_with_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.extract_audio",
+                side_effect=mock_extract_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=lambda inp, out: out,
+            ),
+            patch(
+                "content_extractor.adapters.video.transcribe_audio",
+                return_value=all_sus_result,
+            ),
+        ):
+            result = extractor.extract(content_dir, config)
+
+        # avg confidence of (0.2 + 0.3) / 2 = 0.25, halved = 0.125
+        assert result.quality.confidence == pytest.approx(0.125, abs=0.01)
