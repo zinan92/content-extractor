@@ -52,7 +52,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 02-01-PLAN.md -- ArticleExtractor with trafilatura: HTML cleaning, structure preservation, metadata extraction, end-to-end pipeline test
+- [x] 02-01-PLAN.md -- ArticleExtractor with trafilatura: HTML cleaning, structure preservation, metadata extraction, end-to-end pipeline test
 
 ### Phase 3: LLM Infrastructure
 **Goal**: A reliable Claude API client that loads tokens, handles failures, and respects rate limits -- used by all LLM-dependent adapters

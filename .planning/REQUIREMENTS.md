@@ -16,9 +16,9 @@
 
 ### Article Extraction
 
-- [ ] **ARTC-01**: Clean HTML content using trafilatura, output structured markdown
-- [ ] **ARTC-02**: Preserve article structure (headings, lists, emphasis) in markdown output
-- [ ] **ARTC-03**: Extract article metadata (author, date, word count) from cleaned content
+- [x] **ARTC-01**: Clean HTML content using trafilatura, output structured markdown
+- [x] **ARTC-02**: Preserve article structure (headings, lists, emphasis) in markdown output
+- [x] **ARTC-03**: Extract article metadata (author, date, word count) from cleaned content
 
 ### LLM Infrastructure
 
@@ -116,9 +116,9 @@
 | QUAL-02 | Phase 1: Foundation & Data Models | Complete |
 | QUAL-03 | Phase 1: Foundation & Data Models | Complete |
 | QUAL-04 | Phase 1: Foundation & Data Models | Complete |
-| ARTC-01 | Phase 2: Article Adapter | Pending |
-| ARTC-02 | Phase 2: Article Adapter | Pending |
-| ARTC-03 | Phase 2: Article Adapter | Pending |
+| ARTC-01 | Phase 2: Article Adapter | Complete |
+| ARTC-02 | Phase 2: Article Adapter | Complete |
+| ARTC-03 | Phase 2: Article Adapter | Complete |
 | LLM-01 | Phase 3: LLM Infrastructure | Pending |
 | LLM-02 | Phase 3: LLM Infrastructure | Pending |
 | LLM-03 | Phase 3: LLM Infrastructure | Pending |
