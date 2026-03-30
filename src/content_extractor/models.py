@@ -64,6 +64,7 @@ class TranscriptSegment(BaseModel):
     start: float  # seconds
     end: float  # seconds
     confidence: float  # 0.0-1.0
+    is_suspicious: bool = False
 
 
 class Transcript(BaseModel):
@@ -111,6 +112,7 @@ class QualityMetadata(BaseModel):
     language: str = "unknown"
     word_count: int = 0
     processing_time_seconds: float = 0.0
+    hallucination_warnings: tuple[str, ...] = ()
 
 
 class MediaDescription(BaseModel):

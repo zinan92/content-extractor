@@ -206,3 +206,48 @@ class TestExtractionResult:
 
         with pytest.raises(ValidationError):
             result.raw_text = "changed"
+
+
+class TestTranscriptSegmentSuspicious:
+    """Tests for TranscriptSegment.is_suspicious field."""
+
+    def test_default_not_suspicious(self) -> None:
+        """is_suspicious defaults to False."""
+        seg = TranscriptSegment(
+            text="text", start=0.0, end=1.0, confidence=0.8
+        )
+        assert seg.is_suspicious is False
+
+    def test_can_set_suspicious(self) -> None:
+        """is_suspicious can be set to True."""
+        seg = TranscriptSegment(
+            text="text", start=0.0, end=1.0, confidence=0.8,
+            is_suspicious=True,
+        )
+        assert seg.is_suspicious is True
+
+    def test_model_copy_with_suspicious(self) -> None:
+        """model_copy can update is_suspicious on frozen model."""
+        seg = TranscriptSegment(
+            text="text", start=0.0, end=1.0, confidence=0.8
+        )
+        flagged = seg.model_copy(update={"is_suspicious": True})
+        assert flagged.is_suspicious is True
+        assert seg.is_suspicious is False
+
+
+class TestQualityMetadataHallucination:
+    """Tests for QualityMetadata.hallucination_warnings field."""
+
+    def test_default_empty_warnings(self) -> None:
+        """hallucination_warnings defaults to empty tuple."""
+        meta = QualityMetadata()
+        assert meta.hallucination_warnings == ()
+
+    def test_can_set_warnings(self) -> None:
+        """hallucination_warnings can be populated."""
+        meta = QualityMetadata(
+            hallucination_warnings=("warning 1", "warning 2")
+        )
+        assert len(meta.hallucination_warnings) == 2
+        assert meta.hallucination_warnings[0] == "warning 1"
