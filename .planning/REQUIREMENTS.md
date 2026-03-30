@@ -45,9 +45,9 @@
 
 ### Gallery Extraction
 
-- [ ] **GLRY-01**: Extract each image in gallery using Image adapter
-- [ ] **GLRY-02**: Batch images into minimal API calls to respect rate limits
-- [ ] **GLRY-03**: Synthesize per-image descriptions into coherent gallery narrative via LLM
+- [x] **GLRY-01**: Extract each image in gallery using Image adapter
+- [x] **GLRY-02**: Batch images into minimal API calls to respect rate limits
+- [x] **GLRY-03**: Synthesize per-image descriptions into coherent gallery narrative via LLM
 
 ### LLM Analysis
 
@@ -133,9 +133,9 @@
 | VID-02 | Phase 6: Video Quality | Pending |
 | VID-06 | Phase 6: Video Quality | Pending |
 | VID-07 | Phase 6: Video Quality | Pending |
-| GLRY-01 | Phase 7: Gallery Adapter | Pending |
-| GLRY-02 | Phase 7: Gallery Adapter | Pending |
-| GLRY-03 | Phase 7: Gallery Adapter | Pending |
+| GLRY-01 | Phase 7: Gallery Adapter | Complete |
+| GLRY-02 | Phase 7: Gallery Adapter | Complete |
+| GLRY-03 | Phase 7: Gallery Adapter | Complete |
 | ANLYS-01 | Phase 8: LLM Analysis | Pending |
 | ANLYS-02 | Phase 8: LLM Analysis | Pending |
 | ANLYS-03 | Phase 8: LLM Analysis | Pending |

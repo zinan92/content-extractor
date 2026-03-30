@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-30T06:31:42.930Z"
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-30T06:55:40Z"
 progress:
   total_phases: 9
-  completed_phases: 5
-  total_plans: 8
-  completed_plans: 8
+  completed_phases: 6
+  total_plans: 9
+  completed_plans: 9
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Turn raw multimedia content into structured text consumable by downstream curator and rewriter
-**Current focus:** Phase 04 — image-adapter
+**Current focus:** Phase 07 — gallery-adapter
 
 ## Current Position
 
-Phase: 05
+Phase: 08
 Plan: Not started
 
 ## Performance Metrics
@@ -54,6 +54,7 @@ Plan: Not started
 | Phase 05 P01 | 4min | 2 tasks | 5 files |
 | Phase 05 P02 | 4min | 2 tasks | 5 files |
 | Phase 04 P01 | 6min | 2 tasks | 9 files |
+| Phase 07 P01 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Use create_claude_client from Phase 3 LLM infra for vision API calls
 - [Phase 04]: Extract text_utils from article adapter for shared language/word-count functions
 - [Phase 04]: Per-image error isolation with fallback MediaDescription(confidence=0.0)
+- [Phase 07]: Sequential per-image vision calls in groups of 5 with 1s sleep between batches
+- [Phase 07]: Narrative synthesis skipped when all images fail (no wasted LLM call)
 
 ### Pending Todos
 
@@ -93,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T06:30:56.051Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-30T06:55:40Z
+Stopped at: Completed 07-01-PLAN.md
 Resume file: None
