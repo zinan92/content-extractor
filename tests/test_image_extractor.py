@@ -183,3 +183,193 @@ class TestDescribeImage:
 
         assert "Chinese" in prompt_text or "chinese" in prompt_text.lower()
         assert "JSON" in prompt_text or "json" in prompt_text.lower()
+
+
+# ---------------------------------------------------------------------------
+# Task 2: ImageExtractor adapter tests
+# ---------------------------------------------------------------------------
+
+
+def _make_image_content_item(
+    content_dir: Path,
+    *,
+    content_type: str = "image",
+    media_files: tuple[str, ...] = ("media/test.jpg",),
+) -> None:
+    """Create a content_item.json for image testing."""
+    item = {
+        "platform": "xiaohongshu",
+        "content_id": "img_001",
+        "content_type": content_type,
+        "title": "小红书图片笔记",
+        "description": "测试图片内容提取",
+        "author_id": "xhs_user_1",
+        "author_name": "TestUser",
+        "publish_time": "2026-03-30T10:00:00+00:00",
+        "source_url": "https://www.xiaohongshu.com/explore/img_001",
+        "media_files": list(media_files),
+        "cover_file": None,
+        "metadata_file": "metadata.json",
+        "likes": 100,
+        "comments": 10,
+        "shares": 5,
+        "collects": 50,
+        "views": 1000,
+        "downloaded_at": "2026-03-30T12:00:00Z",
+    }
+    (content_dir / "content_item.json").write_text(json.dumps(item))
+
+
+def _create_test_image(path: Path, size: tuple[int, int] = (100, 100)) -> None:
+    """Create a small solid-color test image."""
+    img = Image.new("RGB", size, color=(255, 0, 0))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(path, "JPEG")
+
+
+class TestImageExtractor:
+    """Tests for ImageExtractor.extract() pipeline."""
+
+    def _mock_describe(self, mock_vision_response_json: str) -> MagicMock:
+        """Create a mock client returning canned Chinese OCR response."""
+        mock_client = MagicMock()
+        content_block = SimpleNamespace(type="text", text=mock_vision_response_json)
+        mock_resp = MagicMock()
+        mock_resp.content = [content_block]
+        mock_client.messages.create.return_value = mock_resp
+        return mock_client
+
+    def test_extract_returns_extraction_result(
+        self, tmp_path: Path, mock_vision_response_json: str
+    ) -> None:
+        """ImageExtractor.extract() should return ExtractionResult with image data."""
+        from content_extractor.adapters.image import ImageExtractor
+
+        _create_test_image(tmp_path / "media" / "test.jpg")
+        _make_image_content_item(tmp_path)
+
+        mock_client = self._mock_describe(mock_vision_response_json)
+        config = ExtractorConfig()
+
+        with patch(
+            "content_extractor.vision.create_claude_client",
+            return_value=mock_client,
+        ):
+            result = ImageExtractor().extract(tmp_path, config)
+
+        assert result.content_type == "image"
+        assert result.content_id == "img_001"
+        assert len(result.media_descriptions) == 1
+        desc = result.media_descriptions[0]
+        assert desc.ocr_text == "小红书爆款笔记分享"
+        assert desc.confidence == pytest.approx(0.92)
+
+    def test_extract_raw_text_contains_ocr(
+        self, tmp_path: Path, mock_vision_response_json: str
+    ) -> None:
+        """raw_text should contain the OCR text from the image."""
+        from content_extractor.adapters.image import ImageExtractor
+
+        _create_test_image(tmp_path / "media" / "test.jpg")
+        _make_image_content_item(tmp_path)
+
+        mock_client = self._mock_describe(mock_vision_response_json)
+        config = ExtractorConfig()
+
+        with patch(
+            "content_extractor.vision.create_claude_client",
+            return_value=mock_client,
+        ):
+            result = ImageExtractor().extract(tmp_path, config)
+
+        assert "小红书爆款笔记分享" in result.raw_text
+
+    def test_extract_quality_language_zh(
+        self, tmp_path: Path, mock_vision_response_json: str
+    ) -> None:
+        """Quality should detect Chinese language from OCR text."""
+        from content_extractor.adapters.image import ImageExtractor
+
+        _create_test_image(tmp_path / "media" / "test.jpg")
+        _make_image_content_item(tmp_path)
+
+        mock_client = self._mock_describe(mock_vision_response_json)
+        config = ExtractorConfig()
+
+        with patch(
+            "content_extractor.vision.create_claude_client",
+            return_value=mock_client,
+        ):
+            result = ImageExtractor().extract(tmp_path, config)
+
+        assert result.quality.language == "zh"
+        assert result.quality.word_count > 0
+        assert result.quality.processing_time_seconds > 0.0
+
+    def test_extract_no_images_raises(self, tmp_path: Path) -> None:
+        """extract() with no image files should raise ImageExtractionError."""
+        from content_extractor.adapters.image import ImageExtractor
+        from content_extractor.vision import ImageExtractionError
+
+        _make_image_content_item(tmp_path, media_files=())
+        config = ExtractorConfig()
+
+        with pytest.raises(ImageExtractionError, match="No image files"):
+            ImageExtractor().extract(tmp_path, config)
+
+    def test_extract_error_isolation(
+        self, tmp_path: Path, mock_vision_response_json: str
+    ) -> None:
+        """One bad image should not fail the whole extraction."""
+        from content_extractor.adapters.image import ImageExtractor
+
+        # Create one good image and one bad (empty file)
+        _create_test_image(tmp_path / "media" / "good.jpg")
+        (tmp_path / "media").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "media" / "bad.jpg").write_bytes(b"not an image")
+        _make_image_content_item(
+            tmp_path, media_files=("media/good.jpg", "media/bad.jpg")
+        )
+
+        mock_client = self._mock_describe(mock_vision_response_json)
+        config = ExtractorConfig()
+
+        with patch(
+            "content_extractor.vision.create_claude_client",
+            return_value=mock_client,
+        ):
+            result = ImageExtractor().extract(tmp_path, config)
+
+        # Should have 2 descriptions: one good, one with error fallback
+        assert len(result.media_descriptions) == 2
+        good = [d for d in result.media_descriptions if d.confidence > 0]
+        bad = [d for d in result.media_descriptions if d.confidence == 0.0]
+        assert len(good) == 1
+        assert len(bad) == 1
+
+    def test_extract_protocol_satisfaction(self) -> None:
+        """ImageExtractor should satisfy the Extractor Protocol."""
+        from content_extractor.adapters.base import Extractor
+        from content_extractor.adapters.image import ImageExtractor
+
+        assert isinstance(ImageExtractor(), Extractor)
+
+    def test_extract_glob_fallback(
+        self, tmp_path: Path, mock_vision_response_json: str
+    ) -> None:
+        """If media_files is empty, extract() should glob media/ for images."""
+        from content_extractor.adapters.image import ImageExtractor
+
+        _create_test_image(tmp_path / "media" / "photo.jpg")
+        _make_image_content_item(tmp_path, media_files=())
+
+        mock_client = self._mock_describe(mock_vision_response_json)
+        config = ExtractorConfig()
+
+        with patch(
+            "content_extractor.vision.create_claude_client",
+            return_value=mock_client,
+        ):
+            result = ImageExtractor().extract(tmp_path, config)
+
+        assert len(result.media_descriptions) == 1

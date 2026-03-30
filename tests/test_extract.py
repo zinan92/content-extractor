@@ -99,9 +99,9 @@ class TestExtractContentPipeline:
         mock_adapter.extract.assert_called_once()
 
     def test_stub_adapter_raises_not_implemented(self, tmp_path: Path) -> None:
-        """Stub adapters (image/gallery) still raise NotImplementedError."""
+        """Stub adapters (gallery) still raise NotImplementedError."""
         content_dir = tmp_path / "item1"
-        _make_content_item_json(content_dir, content_type="image")
+        _make_content_item_json(content_dir, content_type="gallery")
 
         with pytest.raises(NotImplementedError):
             extract_content(content_dir)
@@ -112,9 +112,9 @@ class TestExtractBatchErrorIsolation:
 
     def test_batch_error_isolation(self, tmp_path: Path) -> None:
         """All items are processed even when some fail."""
-        # Create 3 content dirs -- all with stub adapters (image) that raise
+        # Create 3 content dirs -- all with stub adapters (gallery) that raise
         for i in range(3):
-            _make_content_item_json(tmp_path / f"item{i}", content_type="image")
+            _make_content_item_json(tmp_path / f"item{i}", content_type="gallery")
 
         result = extract_batch(tmp_path)
 
@@ -135,9 +135,9 @@ class TestExtractBatchErrorIsolation:
         bad_dir.mkdir(parents=True)
         (bad_dir / "content_item.json").write_text("NOT JSON")
 
-        # item1 and item2 have valid JSON but stub adapters (image)
-        _make_content_item_json(tmp_path / "item1", content_type="image")
-        _make_content_item_json(tmp_path / "item2", content_type="image")
+        # item1 and item2 have valid JSON but stub adapters (gallery)
+        _make_content_item_json(tmp_path / "item1", content_type="gallery")
+        _make_content_item_json(tmp_path / "item2", content_type="gallery")
 
         result = extract_batch(tmp_path)
 
@@ -158,7 +158,7 @@ class TestExtractBatchErrorIsolation:
     def test_batch_result_counts_match(self, tmp_path: Path) -> None:
         """total == success_count + failure_count."""
         for i in range(2):
-            _make_content_item_json(tmp_path / f"item{i}", content_type="image")
+            _make_content_item_json(tmp_path / f"item{i}", content_type="gallery")
 
         result = extract_batch(tmp_path)
 
@@ -167,8 +167,8 @@ class TestExtractBatchErrorIsolation:
     def test_batch_with_mixed_results(self, tmp_path: Path) -> None:
         """Batch with mocked success and real failures."""
         # item0 will succeed via mock, item1 will fail (stub)
-        _make_content_item_json(tmp_path / "item0", content_type="image")
-        _make_content_item_json(tmp_path / "item1", content_type="image")
+        _make_content_item_json(tmp_path / "item0", content_type="gallery")
+        _make_content_item_json(tmp_path / "item1", content_type="gallery")
 
         expected = _make_extraction_result("item0")
         mock_adapter = MagicMock()

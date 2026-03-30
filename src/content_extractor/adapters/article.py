@@ -10,7 +10,6 @@ since bare_extraction() does not reliably populate both.
 
 from __future__ import annotations
 
-import re
 import time
 from pathlib import Path
 
@@ -20,33 +19,11 @@ from trafilatura.metadata import extract_metadata
 from content_extractor.config import ExtractorConfig
 from content_extractor.loader import load_content_item
 from content_extractor.models import ExtractionResult, QualityMetadata
+from content_extractor.text_utils import _compute_word_count, _detect_language
 
 
 class ArticleExtractionError(Exception):
     """Raised when article extraction fails due to missing or invalid input."""
-
-
-def _compute_word_count(text: str) -> int:
-    """Compute word count handling both CJK and Latin text.
-
-    CJK characters are counted individually (each is roughly a word).
-    Latin words are counted by matching alphabetic sequences.
-    """
-    if not text:
-        return 0
-    cjk_chars = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf]", text))
-    latin_words = len(re.findall(r"[a-zA-Z]+", text))
-    return cjk_chars + latin_words
-
-
-def _detect_language(text: str) -> str:
-    """Simple language detection based on CJK character ratio."""
-    if not text:
-        return "unknown"
-    cjk_count = len(re.findall(r"[\u4e00-\u9fff\u3400-\u4dbf]", text))
-    if cjk_count > len(text) * 0.1:
-        return "zh"
-    return "en"
 
 
 class ArticleExtractor:
