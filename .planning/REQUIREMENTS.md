@@ -22,10 +22,10 @@
 
 ### LLM Infrastructure
 
-- [ ] **LLM-01**: Load CLI Proxy API token from `~/.cli-proxy-api/claude-*.json` (access_token field)
-- [ ] **LLM-02**: Fall back to `ANTHROPIC_API_KEY` env var if CLI Proxy API token not found (for CI)
-- [ ] **LLM-03**: Handle token expiration gracefully with clear error message
-- [ ] **LLM-04**: Rate limit awareness — respect API limits, back off on 429 responses
+- [x] **LLM-01**: Load CLI Proxy API token from `~/.cli-proxy-api/claude-*.json` (access_token field)
+- [x] **LLM-02**: Fall back to `ANTHROPIC_API_KEY` env var if CLI Proxy API token not found (for CI)
+- [x] **LLM-03**: Handle token expiration gracefully with clear error message
+- [x] **LLM-04**: Rate limit awareness — respect API limits, back off on 429 responses
 
 ### Image Extraction
 
@@ -119,10 +119,10 @@
 | ARTC-01 | Phase 2: Article Adapter | Complete |
 | ARTC-02 | Phase 2: Article Adapter | Complete |
 | ARTC-03 | Phase 2: Article Adapter | Complete |
-| LLM-01 | Phase 3: LLM Infrastructure | Pending |
-| LLM-02 | Phase 3: LLM Infrastructure | Pending |
-| LLM-03 | Phase 3: LLM Infrastructure | Pending |
-| LLM-04 | Phase 3: LLM Infrastructure | Pending |
+| LLM-01 | Phase 3: LLM Infrastructure | Complete |
+| LLM-02 | Phase 3: LLM Infrastructure | Complete |
+| LLM-03 | Phase 3: LLM Infrastructure | Complete |
+| LLM-04 | Phase 3: LLM Infrastructure | Complete |
 | IMG-01 | Phase 4: Image Adapter | Pending |
 | IMG-02 | Phase 4: Image Adapter | Pending |
 | IMG-03 | Phase 4: Image Adapter | Pending |

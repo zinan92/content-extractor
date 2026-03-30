@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-30T06:00:53.744Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-30T06:15:06.941Z"
 progress:
   total_phases: 9
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 3
+  total_plans: 8
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Turn raw multimedia content into structured text consumable by downstream curator and rewriter
-**Current focus:** Phase 02 — article-adapter
+**Current focus:** Phase 03 — llm-infrastructure
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
+Phase: 03 (llm-infrastructure) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Plan: Not started
 | Phase 01 P02 | 4min | 2 tasks | 10 files |
 | Phase 01 P03 | 4min | 2 tasks | 5 files |
 | Phase 02 P01 | 6min | 2 tasks | 5 files |
+| Phase 03 P01 | 2min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,7 @@ Recent decisions affecting current work:
 - [Phase 02]: Use trafilatura.extract() with favor_recall instead of bare_extraction() for markdown -- bare_extraction returns empty text with output_format=markdown
 - [Phase 02]: Separate extract_metadata() call for author/date/title since bare_extraction Document fields are not populated
 - [Phase 02]: CJK word count via regex character counting -- each CJK char counts as one word
+- [Phase 03]: No base_url override needed for CLI Proxy tokens -- standard Anthropic API tokens
 
 ### Pending Todos
 
@@ -82,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T05:57:44.967Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-30T06:15:06.939Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None

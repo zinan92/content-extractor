@@ -66,7 +66,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 03-01-PLAN.md -- Token loader (CLI Proxy + env var fallback), client factory, error hierarchy, rate limit config
+- [x] 03-01-PLAN.md -- Token loader (CLI Proxy + env var fallback), client factory, error hierarchy, rate limit config
 
 ### Phase 4: Image Adapter
 **Goal**: Single images are described via Claude vision with OCR and visual description in one call
