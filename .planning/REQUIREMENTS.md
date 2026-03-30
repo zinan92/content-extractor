@@ -36,12 +36,12 @@
 ### Video Extraction
 
 - [x] **VID-01**: Extract audio from video using FFmpeg (handle various codecs from Douyin/XHS)
-- [ ] **VID-02**: Run VAD (Voice Activity Detection) preprocessing to filter non-speech segments
+- [x] **VID-02**: Run VAD (Voice Activity Detection) preprocessing to filter non-speech segments
 - [x] **VID-03**: Transcribe audio using faster-whisper with explicit language parameter
 - [x] **VID-04**: Output timestamped transcript segments with confidence scores
 - [x] **VID-05**: Default to turbo model, support `--whisper-model` flag for model selection
-- [ ] **VID-06**: Audio preprocessing — volume normalization before transcription
-- [ ] **VID-07**: Detect and flag low-confidence transcriptions (hallucination guard)
+- [x] **VID-06**: Audio preprocessing — volume normalization before transcription
+- [x] **VID-07**: Detect and flag low-confidence transcriptions (hallucination guard)
 
 ### Gallery Extraction
 
@@ -130,9 +130,9 @@
 | VID-03 | Phase 5: Video Core | Complete |
 | VID-04 | Phase 5: Video Core | Complete |
 | VID-05 | Phase 5: Video Core | Complete |
-| VID-02 | Phase 6: Video Quality | Pending |
-| VID-06 | Phase 6: Video Quality | Pending |
-| VID-07 | Phase 6: Video Quality | Pending |
+| VID-02 | Phase 6: Video Quality | Complete |
+| VID-06 | Phase 6: Video Quality | Complete |
+| VID-07 | Phase 6: Video Quality | Complete |
 | GLRY-01 | Phase 7: Gallery Adapter | Complete |
 | GLRY-02 | Phase 7: Gallery Adapter | Complete |
 | GLRY-03 | Phase 7: Gallery Adapter | Complete |

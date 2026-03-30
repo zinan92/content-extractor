@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-03-30T07:01:00Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-03-30T07:01:42Z"
 progress:
   total_phases: 9
   completed_phases: 8
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 13
+  completed_plans: 13
 ---
 
 # Project State
@@ -57,6 +57,8 @@ Plan: Not started
 | Phase 07 P01 | 3min | 2 tasks | 4 files |
 | Phase 08 P01 | 4min | 1 tasks | 2 files |
 | Phase 08 P02 | 5min | 2 tasks | 4 files |
+| Phase 06 P01 | 4min | 2 tasks | 6 files |
+| Phase 06 P02 | 4min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -90,6 +92,13 @@ Recent decisions affecting current work:
 - [Phase 08]: Empty/whitespace input returns fallback without LLM call (cost optimization)
 - [Phase 08]: AnalysisError caught in extract_content() with fallback, not in output writer
 - [Phase 08]: Optional analysis kwarg on write_extraction_output() for backward compatibility
+- [Phase 06]: EBU R128 loudnorm (I=-16, TP=-1.5, LRA=11) for volume normalization
+- [Phase 06]: Non-fatal normalization fallback on FFmpegError
+- [Phase 06]: Speech ratio < 0.10 gates transcription with early return
+- [Phase 06]: TranscriptionResult frozen dataclass wrapping segments + speech_ratio + duration
+- [Phase 06]: Confidence < 0.4 and CJK chars/sec > 6.0 for suspicious segment detection
+- [Phase 06]: Character 4-grams with threshold 3 for CJK repetition detection
+- [Phase 06]: All-suspicious transcript halves avg confidence (not zero)
 
 ### Pending Todos
 
@@ -102,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T07:01:00Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-03-30T07:01:42Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None

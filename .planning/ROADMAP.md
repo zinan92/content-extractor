@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 3: LLM Infrastructure** - CLI Proxy API client, token loading, fallback, rate limiting
 - [ ] **Phase 4: Image Adapter** - Claude vision OCR + visual description for single images
 - [x] **Phase 5: Video Core** - FFmpeg audio extraction + faster-whisper transcription with timestamps (completed 2026-03-30)
-- [ ] **Phase 6: Video Quality** - VAD preprocessing, volume normalization, hallucination guard
+- [x] **Phase 6: Video Quality** - VAD preprocessing, volume normalization, hallucination guard (completed 2026-03-30)
 - [ ] **Phase 7: Gallery Adapter** - Multi-image extraction with batching + narrative synthesis
 - [x] **Phase 8: LLM Analysis** - Structured analysis layer (themes, viewpoints, sentiment, takeaways) (completed 2026-03-30)
 - [ ] **Phase 9: CLI & Library API** - Typer CLI with batch mode, progress bars, error summaries, Python library API
@@ -107,8 +107,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md -- Volume normalization (FFmpeg loudnorm), VAD speech-ratio capture from TranscriptionInfo, speech-ratio gating in VideoExtractor
-- [ ] 06-02-PLAN.md -- Hallucination detection heuristics (confidence, chars/sec, repetition), model updates (is_suspicious, hallucination_warnings), VideoExtractor wiring
+- [x] 06-01-PLAN.md -- Volume normalization (FFmpeg loudnorm), VAD speech-ratio capture from TranscriptionInfo, speech-ratio gating in VideoExtractor
+- [x] 06-02-PLAN.md -- Hallucination detection heuristics (confidence, chars/sec, repetition), model updates (is_suspicious, hallucination_warnings), VideoExtractor wiring
 
 ### Phase 7: Gallery Adapter
 **Goal**: Multi-image galleries are extracted with batched API calls and synthesized into a coherent narrative
@@ -168,7 +168,7 @@ Phase 4 depends on 1+3. Phase 6 depends on 5. Phase 7 depends on 4. Phase 8 depe
 | 3. LLM Infrastructure | 1/1 | Complete | - |
 | 4. Image Adapter | 1/1 | Complete | - |
 | 5. Video Core | 2/2 | Complete   | 2026-03-30 |
-| 6. Video Quality | 0/2 | Not started | - |
+| 6. Video Quality | 2/2 | Complete | 2026-03-30 |
 | 7. Gallery Adapter | 1/1 | Complete | 2026-03-30 |
 | 8. LLM Analysis | 2/2 | Complete   | 2026-03-30 |
 | 9. CLI & Library API | 0/2 | Not started | - |
