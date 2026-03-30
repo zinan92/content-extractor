@@ -63,10 +63,10 @@ Plans:
   2. When no CLI Proxy token exists, `ANTHROPIC_API_KEY` env var is used as fallback
   3. Expired tokens produce a clear error message (not a cryptic API failure)
   4. API calls back off on 429 responses and retry without crashing
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md -- Token loader (CLI Proxy + env var fallback), client factory, error hierarchy, rate limit config
 
 ### Phase 4: Image Adapter
 **Goal**: Single images are described via Claude vision with OCR and visual description in one call
@@ -162,8 +162,8 @@ Phase 4 depends on 1+3. Phase 6 depends on 5. Phase 7 depends on 4. Phase 8 depe
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Data Models | 0/3 | Not started | - |
-| 2. Article Adapter | 0/1 | Not started | - |
+| 1. Foundation & Data Models | 3/3 | Complete | - |
+| 2. Article Adapter | 1/1 | Complete | - |
 | 3. LLM Infrastructure | 0/1 | Not started | - |
 | 4. Image Adapter | 0/1 | Not started | - |
 | 5. Video Core | 0/2 | Not started | - |
