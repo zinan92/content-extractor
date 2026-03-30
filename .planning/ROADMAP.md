@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Article Adapter** - HTML cleaning with trafilatura, proves adapter pattern end-to-end
 - [ ] **Phase 3: LLM Infrastructure** - CLI Proxy API client, token loading, fallback, rate limiting
 - [ ] **Phase 4: Image Adapter** - Claude vision OCR + visual description for single images
-- [ ] **Phase 5: Video Core** - FFmpeg audio extraction + faster-whisper transcription with timestamps
+- [x] **Phase 5: Video Core** - FFmpeg audio extraction + faster-whisper transcription with timestamps (completed 2026-03-30)
 - [ ] **Phase 6: Video Quality** - VAD preprocessing, volume normalization, hallucination guard
 - [ ] **Phase 7: Gallery Adapter** - Multi-image extraction with batching + narrative synthesis
 - [ ] **Phase 8: LLM Analysis** - Structured analysis layer (themes, viewpoints, sentiment, takeaways)
@@ -93,8 +93,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md -- FFmpeg audio extraction module (probe + extract) and faster-whisper transcription module with anti-hallucination settings
-- [ ] 05-02-PLAN.md -- VideoExtractor adapter wiring (replace stub), faster-whisper dependency, full pipeline integration
+- [x] 05-01-PLAN.md -- FFmpeg audio extraction module (probe + extract) and faster-whisper transcription module with anti-hallucination settings
+- [x] 05-02-PLAN.md -- VideoExtractor adapter wiring (replace stub), faster-whisper dependency, full pipeline integration
 
 ### Phase 6: Video Quality
 **Goal**: Transcription quality is hardened against hallucinations and poor audio through preprocessing and confidence scoring
@@ -166,7 +166,7 @@ Phase 4 depends on 1+3. Phase 6 depends on 5. Phase 7 depends on 4. Phase 8 depe
 | 2. Article Adapter | 1/1 | Complete | - |
 | 3. LLM Infrastructure | 0/1 | Not started | - |
 | 4. Image Adapter | 0/1 | Not started | - |
-| 5. Video Core | 0/2 | Not started | - |
+| 5. Video Core | 2/2 | Complete   | 2026-03-30 |
 | 6. Video Quality | 0/1 | Not started | - |
 | 7. Gallery Adapter | 0/1 | Not started | - |
 | 8. LLM Analysis | 0/2 | Not started | - |

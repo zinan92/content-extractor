@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-30T06:15:06.941Z"
+stopped_at: Completed 05-02-PLAN.md (Phase 05 complete)
+last_updated: "2026-03-30T06:21:15.344Z"
 progress:
   total_phases: 9
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 7
 ---
 
 # Project State
@@ -51,6 +51,8 @@ Plan: 1 of 1
 | Phase 01 P03 | 4min | 2 tasks | 5 files |
 | Phase 02 P01 | 6min | 2 tasks | 5 files |
 | Phase 03 P01 | 2min | 1 tasks | 3 files |
+| Phase 05 P01 | 4min | 2 tasks | 5 files |
+| Phase 05 P02 | 4min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -72,6 +74,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Separate extract_metadata() call for author/date/title since bare_extraction Document fields are not populated
 - [Phase 02]: CJK word count via regex character counting -- each CJK char counts as one word
 - [Phase 03]: No base_url override needed for CLI Proxy tokens -- standard Anthropic API tokens
+- [Phase 05]: frozen dataclass for AudioProbeResult -- lightweight internal type not serialized
+- [Phase 05]: Module-level dict cache for WhisperModel instances -- justified by ~5s load time
+- [Phase 05]: math.exp(avg_logprob) clamped to [0,1] for confidence scoring
 
 ### Pending Todos
 
@@ -84,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T06:15:06.939Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-03-30T06:21:10.202Z
+Stopped at: Completed 05-02-PLAN.md (Phase 05 complete)
 Resume file: None

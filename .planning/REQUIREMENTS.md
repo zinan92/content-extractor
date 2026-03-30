@@ -35,11 +35,11 @@
 
 ### Video Extraction
 
-- [ ] **VID-01**: Extract audio from video using FFmpeg (handle various codecs from Douyin/XHS)
+- [x] **VID-01**: Extract audio from video using FFmpeg (handle various codecs from Douyin/XHS)
 - [ ] **VID-02**: Run VAD (Voice Activity Detection) preprocessing to filter non-speech segments
-- [ ] **VID-03**: Transcribe audio using faster-whisper with explicit language parameter
-- [ ] **VID-04**: Output timestamped transcript segments with confidence scores
-- [ ] **VID-05**: Default to turbo model, support `--whisper-model` flag for model selection
+- [x] **VID-03**: Transcribe audio using faster-whisper with explicit language parameter
+- [x] **VID-04**: Output timestamped transcript segments with confidence scores
+- [x] **VID-05**: Default to turbo model, support `--whisper-model` flag for model selection
 - [ ] **VID-06**: Audio preprocessing — volume normalization before transcription
 - [ ] **VID-07**: Detect and flag low-confidence transcriptions (hallucination guard)
 
@@ -126,10 +126,10 @@
 | IMG-01 | Phase 4: Image Adapter | Pending |
 | IMG-02 | Phase 4: Image Adapter | Pending |
 | IMG-03 | Phase 4: Image Adapter | Pending |
-| VID-01 | Phase 5: Video Core | Pending |
-| VID-03 | Phase 5: Video Core | Pending |
-| VID-04 | Phase 5: Video Core | Pending |
-| VID-05 | Phase 5: Video Core | Pending |
+| VID-01 | Phase 5: Video Core | Complete |
+| VID-03 | Phase 5: Video Core | Complete |
+| VID-04 | Phase 5: Video Core | Complete |
+| VID-05 | Phase 5: Video Core | Complete |
 | VID-02 | Phase 6: Video Quality | Pending |
 | VID-06 | Phase 6: Video Quality | Pending |
 | VID-07 | Phase 6: Video Quality | Pending |
