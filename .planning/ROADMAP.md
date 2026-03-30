@@ -76,10 +76,10 @@ Plans:
   1. An image ContentItem produces a structured result with `ocr_text`, `visual_description`, and `confidence`
   2. Chinese text overlays (common on Xiaohongshu images) are correctly recognized in OCR output
   3. Image extraction output integrates into the standard output files (transcript.json contains image description)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md -- Vision module (image preprocessing + Claude API), ImageExtractor adapter, shared text utilities, Chinese OCR tests
 
 ### Phase 5: Video Core
 **Goal**: Video content is transcribed into timestamped text segments using FFmpeg + faster-whisper
