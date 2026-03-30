@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Video Core** - FFmpeg audio extraction + faster-whisper transcription with timestamps (completed 2026-03-30)
 - [ ] **Phase 6: Video Quality** - VAD preprocessing, volume normalization, hallucination guard
 - [ ] **Phase 7: Gallery Adapter** - Multi-image extraction with batching + narrative synthesis
-- [ ] **Phase 8: LLM Analysis** - Structured analysis layer (themes, viewpoints, sentiment, takeaways)
+- [x] **Phase 8: LLM Analysis** - Structured analysis layer (themes, viewpoints, sentiment, takeaways) (completed 2026-03-30)
 - [ ] **Phase 9: CLI & Library API** - Typer CLI with batch mode, progress bars, error summaries, Python library API
 
 ## Phase Details
@@ -135,8 +135,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md -- Analysis module: analyze_content() function with Claude LLM call, structured JSON parsing, error handling
-- [ ] 08-02-PLAN.md -- Pipeline integration: wire analysis into extract.py, update output.py to render real analysis content
+- [x] 08-01-PLAN.md -- Analysis module: analyze_content() function with Claude LLM call, structured JSON parsing, error handling
+- [x] 08-02-PLAN.md -- Pipeline integration: wire analysis into extract.py, update output.py to render real analysis content
 
 ### Phase 9: CLI & Library API
 **Goal**: Users can extract content via CLI commands or Python imports with full operational visibility
@@ -170,5 +170,5 @@ Phase 4 depends on 1+3. Phase 6 depends on 5. Phase 7 depends on 4. Phase 8 depe
 | 5. Video Core | 2/2 | Complete   | 2026-03-30 |
 | 6. Video Quality | 0/2 | Not started | - |
 | 7. Gallery Adapter | 1/1 | Complete | 2026-03-30 |
-| 8. LLM Analysis | 0/2 | Not started | - |
+| 8. LLM Analysis | 2/2 | Complete   | 2026-03-30 |
 | 9. CLI & Library API | 0/2 | Not started | - |

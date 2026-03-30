@@ -51,12 +51,12 @@
 
 ### LLM Analysis
 
-- [ ] **ANLYS-01**: Analyze extracted text to identify main themes/topics
-- [ ] **ANLYS-02**: Extract core viewpoints/arguments from content
-- [ ] **ANLYS-03**: Assess emotional tone/sentiment of content
-- [ ] **ANLYS-04**: Generate actionable takeaways from content
-- [ ] **ANLYS-05**: Output structured `analysis.json` with all analysis dimensions
-- [ ] **ANLYS-06**: Generate human-readable `structured_text.md` combining transcript + analysis
+- [x] **ANLYS-01**: Analyze extracted text to identify main themes/topics
+- [x] **ANLYS-02**: Extract core viewpoints/arguments from content
+- [x] **ANLYS-03**: Assess emotional tone/sentiment of content
+- [x] **ANLYS-04**: Generate actionable takeaways from content
+- [x] **ANLYS-05**: Output structured `analysis.json` with all analysis dimensions
+- [x] **ANLYS-06**: Generate human-readable `structured_text.md` combining transcript + analysis
 
 ### CLI & Library
 
@@ -136,12 +136,12 @@
 | GLRY-01 | Phase 7: Gallery Adapter | Complete |
 | GLRY-02 | Phase 7: Gallery Adapter | Complete |
 | GLRY-03 | Phase 7: Gallery Adapter | Complete |
-| ANLYS-01 | Phase 8: LLM Analysis | Pending |
-| ANLYS-02 | Phase 8: LLM Analysis | Pending |
-| ANLYS-03 | Phase 8: LLM Analysis | Pending |
-| ANLYS-04 | Phase 8: LLM Analysis | Pending |
-| ANLYS-05 | Phase 8: LLM Analysis | Pending |
-| ANLYS-06 | Phase 8: LLM Analysis | Pending |
+| ANLYS-01 | Phase 8: LLM Analysis | Complete |
+| ANLYS-02 | Phase 8: LLM Analysis | Complete |
+| ANLYS-03 | Phase 8: LLM Analysis | Complete |
+| ANLYS-04 | Phase 8: LLM Analysis | Complete |
+| ANLYS-05 | Phase 8: LLM Analysis | Complete |
+| ANLYS-06 | Phase 8: LLM Analysis | Complete |
 | CLI-01 | Phase 9: CLI & Library API | Pending |
 | CLI-02 | Phase 9: CLI & Library API | Pending |
 | CLI-03 | Phase 9: CLI & Library API | Pending |
