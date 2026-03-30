@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from PIL import Image
 
 
 @pytest.fixture()
@@ -42,3 +43,23 @@ def tmp_content_dir(
     item_path = tmp_path / "content_item.json"
     item_path.write_text(json.dumps(sample_content_item_dict), encoding="utf-8")
     return tmp_path
+
+
+@pytest.fixture()
+def tmp_image_dir(tmp_path: Path) -> Path:
+    """Create a temp dir with a small 100x100 red JPEG test image."""
+    media_dir = tmp_path / "media"
+    media_dir.mkdir()
+    img = Image.new("RGB", (100, 100), color=(255, 0, 0))
+    img.save(media_dir / "test.jpg", "JPEG")
+    return tmp_path
+
+
+@pytest.fixture()
+def mock_vision_response_json() -> str:
+    """Return a valid JSON string mimicking Claude vision response."""
+    return json.dumps({
+        "ocr_text": "小红书爆款笔记分享",
+        "visual_description": "A red background image with Chinese text overlay",
+        "confidence": 0.92,
+    })
