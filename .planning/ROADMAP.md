@@ -49,10 +49,10 @@ Plans:
   1. An article ContentItem with raw HTML produces clean structured markdown preserving headings, lists, and emphasis
   2. Article metadata (author, date, word count) is extracted and included in the output
   3. Running extraction on an article directory produces all three output files (transcript.json, analysis.json placeholder, structured_text.md)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md -- ArticleExtractor with trafilatura: HTML cleaning, structure preservation, metadata extraction, end-to-end pipeline test
 
 ### Phase 3: LLM Infrastructure
 **Goal**: A reliable Claude API client that loads tokens, handles failures, and respects rate limits -- used by all LLM-dependent adapters
