@@ -150,8 +150,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 09-01-PLAN.md -- Typer CLI with extract and extract-batch commands, Rich progress bar, error summary table
-- [ ] 09-02-PLAN.md -- Python library API polish (extract alias, ExtractionResult export, contract tests)
+- [x] 09-01-PLAN.md -- Typer CLI with extract and extract-batch commands, Rich progress bar, error summary table
+- [x] 09-02-PLAN.md -- Python library API polish (extract alias, ExtractionResult export, contract tests)
 
 ## Progress
 

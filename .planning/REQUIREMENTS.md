@@ -60,11 +60,11 @@
 
 ### CLI & Library
 
-- [ ] **CLI-01**: Single-item extraction: `content-extractor extract /path/to/content_item/`
-- [ ] **CLI-02**: Batch extraction: `content-extractor extract-batch /path/to/output_dir/`
-- [ ] **CLI-03**: Progress bar for batch mode (Rich/tqdm)
-- [ ] **CLI-04**: Error summary at end of batch run
-- [ ] **CLI-05**: Python library API: `extract(path) -> ExtractionResult` and `extract_batch(dir) -> list[ExtractionResult]`
+- [x] **CLI-01**: Single-item extraction: `content-extractor extract /path/to/content_item/`
+- [x] **CLI-02**: Batch extraction: `content-extractor extract-batch /path/to/output_dir/`
+- [x] **CLI-03**: Progress bar for batch mode (Rich/tqdm)
+- [x] **CLI-04**: Error summary at end of batch run
+- [x] **CLI-05**: Python library API: `extract(path) -> ExtractionResult` and `extract_batch(dir) -> list[ExtractionResult]`
 
 ### Quality & Reliability
 
@@ -142,11 +142,11 @@
 | ANLYS-04 | Phase 8: LLM Analysis | Complete |
 | ANLYS-05 | Phase 8: LLM Analysis | Complete |
 | ANLYS-06 | Phase 8: LLM Analysis | Complete |
-| CLI-01 | Phase 9: CLI & Library API | Pending |
-| CLI-02 | Phase 9: CLI & Library API | Pending |
-| CLI-03 | Phase 9: CLI & Library API | Pending |
-| CLI-04 | Phase 9: CLI & Library API | Pending |
-| CLI-05 | Phase 9: CLI & Library API | Pending |
+| CLI-01 | Phase 9: CLI & Library API | Complete |
+| CLI-02 | Phase 9: CLI & Library API | Complete |
+| CLI-03 | Phase 9: CLI & Library API | Complete |
+| CLI-04 | Phase 9: CLI & Library API | Complete |
+| CLI-05 | Phase 9: CLI & Library API | Complete |
 
 **Coverage:**
 - v1 requirements: 39 total

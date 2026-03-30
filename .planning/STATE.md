@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-03-30T07:05:44.684Z"
+status: complete
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-03-30T07:11:00Z"
 progress:
   total_phases: 9
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 15
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Turn raw multimedia content into structured text consumable by downstream curator and rewriter
-**Current focus:** Phase 08 — llm-analysis (complete)
+**Current focus:** Phase 09 — cli-library-api (complete)
 
 ## Current Position
 
 Phase: 09
-Plan: Not started
+Plan: 2 of 2 (complete)
 
 ## Performance Metrics
 
@@ -59,6 +59,8 @@ Plan: Not started
 | Phase 08 P02 | 5min | 2 tasks | 4 files |
 | Phase 06 P01 | 4min | 2 tasks | 6 files |
 | Phase 06 P02 | 4min | 2 tasks | 6 files |
+| Phase 09 P01 | 3min | 1 tasks | 2 files |
+| Phase 09 P02 | 2min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -98,6 +100,8 @@ Recent decisions affecting current work:
 - [Phase 06]: TranscriptionResult frozen dataclass wrapping segments + speech_ratio + duration
 - [Phase 06]: Confidence < 0.4 and CJK chars/sec > 6.0 for suspicious segment detection
 - [Phase 06]: Character 4-grams with threshold 3 for CJK repetition detection
+- [Phase 09]: Reimplemented batch scan loop in CLI for Rich progress integration (extract_batch has no callback)
+- [Phase 09]: extract = extract_content simple name binding for public API alias
 - [Phase 06]: All-suspicious transcript halves avg confidence (not zero)
 
 ### Pending Todos
@@ -111,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T07:01:42Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-03-30T07:11:00Z
+Stopped at: Completed 09-02-PLAN.md (all phases complete)
 Resume file: None
