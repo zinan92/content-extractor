@@ -131,11 +131,11 @@ Plans:
   2. Actionable takeaways are generated from content
   3. Analysis output is written as structured `analysis.json` with all dimensions
   4. A human-readable `structured_text.md` combining transcript and analysis is generated
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 08-01-PLAN.md -- Analysis module: analyze_content() function with Claude LLM call, structured JSON parsing, error handling
+- [ ] 08-02-PLAN.md -- Pipeline integration: wire analysis into extract.py, update output.py to render real analysis content
 
 ### Phase 9: CLI & Library API
 **Goal**: Users can extract content via CLI commands or Python imports with full operational visibility
