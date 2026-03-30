@@ -59,10 +59,21 @@ class TestExtractContentSkip:
         (content_dir / ".extraction_complete").touch()
 
         config = ExtractorConfig(force_reprocess=True)
-        # With force, it should NOT skip -- it will try to extract
-        # Since adapters are stubs, this raises NotImplementedError
-        with pytest.raises(NotImplementedError):
-            extract_content(content_dir, config)
+        expected = _make_extraction_result("item1")
+
+        mock_adapter = MagicMock()
+        mock_adapter.extract.return_value = expected
+
+        # With force, it should NOT skip -- it will route to the adapter
+        with (
+            patch("content_extractor.extract.get_extractor", return_value=mock_adapter),
+            patch("content_extractor.extract.write_extraction_output"),
+        ):
+            result = extract_content(content_dir, config)
+
+        assert result is not None
+        assert result.content_id == "item1"
+        mock_adapter.extract.assert_called_once()
 
 
 class TestExtractContentPipeline:
@@ -88,9 +99,9 @@ class TestExtractContentPipeline:
         mock_adapter.extract.assert_called_once()
 
     def test_stub_adapter_raises_not_implemented(self, tmp_path: Path) -> None:
-        """Phase 1 adapters are stubs -- extract raises NotImplementedError."""
+        """Stub adapters (image/gallery) still raise NotImplementedError."""
         content_dir = tmp_path / "item1"
-        _make_content_item_json(content_dir)
+        _make_content_item_json(content_dir, content_type="image")
 
         with pytest.raises(NotImplementedError):
             extract_content(content_dir)
@@ -101,14 +112,14 @@ class TestExtractBatchErrorIsolation:
 
     def test_batch_error_isolation(self, tmp_path: Path) -> None:
         """All items are processed even when some fail."""
-        # Create 3 content dirs -- all with stub adapters that raise
+        # Create 3 content dirs -- all with stub adapters (image) that raise
         for i in range(3):
-            _make_content_item_json(tmp_path / f"item{i}")
+            _make_content_item_json(tmp_path / f"item{i}", content_type="image")
 
         result = extract_batch(tmp_path)
 
         assert result.total == 3
-        # All fail because adapters are stubs (NotImplementedError)
+        # All fail because image adapters are stubs (NotImplementedError)
         assert result.failure_count == 3
         assert result.success_count == 0
         assert len(result.failed) == 3
@@ -124,9 +135,9 @@ class TestExtractBatchErrorIsolation:
         bad_dir.mkdir(parents=True)
         (bad_dir / "content_item.json").write_text("NOT JSON")
 
-        # item1 and item2 have valid JSON but stub adapters
-        _make_content_item_json(tmp_path / "item1")
-        _make_content_item_json(tmp_path / "item2")
+        # item1 and item2 have valid JSON but stub adapters (image)
+        _make_content_item_json(tmp_path / "item1", content_type="image")
+        _make_content_item_json(tmp_path / "item2", content_type="image")
 
         result = extract_batch(tmp_path)
 
@@ -147,7 +158,7 @@ class TestExtractBatchErrorIsolation:
     def test_batch_result_counts_match(self, tmp_path: Path) -> None:
         """total == success_count + failure_count."""
         for i in range(2):
-            _make_content_item_json(tmp_path / f"item{i}")
+            _make_content_item_json(tmp_path / f"item{i}", content_type="image")
 
         result = extract_batch(tmp_path)
 
@@ -156,8 +167,8 @@ class TestExtractBatchErrorIsolation:
     def test_batch_with_mixed_results(self, tmp_path: Path) -> None:
         """Batch with mocked success and real failures."""
         # item0 will succeed via mock, item1 will fail (stub)
-        _make_content_item_json(tmp_path / "item0")
-        _make_content_item_json(tmp_path / "item1")
+        _make_content_item_json(tmp_path / "item0", content_type="image")
+        _make_content_item_json(tmp_path / "item1", content_type="image")
 
         expected = _make_extraction_result("item0")
         mock_adapter = MagicMock()
