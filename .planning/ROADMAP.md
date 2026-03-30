@@ -39,7 +39,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md -- Project scaffold, Pydantic models (input + output), ContentItem loader
 - [x] 01-02-PLAN.md -- Adapter Protocol, stub adapters, router registry, atomic output writer
-- [ ] 01-03-PLAN.md -- ExtractorConfig, extract/extract_batch orchestration, error isolation
+- [x] 01-03-PLAN.md -- ExtractorConfig, extract/extract_batch orchestration, error isolation
 
 ### Phase 2: Article Adapter
 **Goal**: Articles are cleaned and structured into markdown, proving the adapter pattern end-to-end with zero external service dependencies

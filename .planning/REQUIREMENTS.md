@@ -12,7 +12,7 @@
 - [x] **FOUND-03**: Define standardized output Pydantic models for transcript, analysis, and extraction result
 - [x] **FOUND-04**: Write output files (`transcript.json`, `analysis.json`, `structured_text.md`) to ContentItem directory
 - [x] **FOUND-05**: Skip already-extracted content by checking output file existence (idempotent); `--force` flag to override
-- [ ] **FOUND-06**: Configuration system for Whisper model, LLM settings, and default behaviors
+- [x] **FOUND-06**: Configuration system for Whisper model, LLM settings, and default behaviors
 
 ### Article Extraction
 
@@ -68,7 +68,7 @@
 
 ### Quality & Reliability
 
-- [ ] **QUAL-01**: Per-item error isolation — one failed image in gallery does not fail the whole item
+- [x] **QUAL-01**: Per-item error isolation — one failed image in gallery does not fail the whole item
 - [x] **QUAL-02**: Extraction quality metadata per item (confidence, language, word count, processing time)
 - [x] **QUAL-03**: Atomic file writes — partial output never left behind on failure
 - [x] **QUAL-04**: Preserve platform metadata (author, date, engagement metrics) in output
@@ -111,8 +111,8 @@
 | FOUND-03 | Phase 1: Foundation & Data Models | Complete |
 | FOUND-04 | Phase 1: Foundation & Data Models | Complete |
 | FOUND-05 | Phase 1: Foundation & Data Models | Complete |
-| FOUND-06 | Phase 1: Foundation & Data Models | Pending |
-| QUAL-01 | Phase 1: Foundation & Data Models | Pending |
+| FOUND-06 | Phase 1: Foundation & Data Models | Complete |
+| QUAL-01 | Phase 1: Foundation & Data Models | Complete |
 | QUAL-02 | Phase 1: Foundation & Data Models | Complete |
 | QUAL-03 | Phase 1: Foundation & Data Models | Complete |
 | QUAL-04 | Phase 1: Foundation & Data Models | Complete |

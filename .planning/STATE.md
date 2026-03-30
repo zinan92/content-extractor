@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-03-30T05:17:57.576Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-03-30T05:19:00.325Z"
 progress:
   total_phases: 9
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -48,6 +48,7 @@ Plan: 3 of 3
 *Updated after each plan completion*
 | Phase 01 P01 | 4min | 2 tasks | 13 files |
 | Phase 01 P02 | 4min | 2 tasks | 10 files |
+| Phase 01 P03 | 4min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,8 @@ Recent decisions affecting current work:
 - [Phase 01]: extra=ignore on ContentItem for forward compatibility with upstream
 - [Phase 01]: Extractor Protocol with runtime_checkable for adapter structural subtyping
 - [Phase 01]: .extraction_complete marker file for idempotency (not individual file checks)
+- [Phase 01]: LLM defaults hardcoded in ExtractorConfig, not CLI-exposed (per D-06)
+- [Phase 01]: BatchResult uses frozen dataclass with tuples, per-item errors to stderr, batch never aborts (D-07, D-09)
 
 ### Pending Todos
 
@@ -75,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T05:17:57.575Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-03-30T05:19:00.324Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
