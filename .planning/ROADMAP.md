@@ -90,11 +90,11 @@ Plans:
   2. Transcription produces timestamped segments with confidence scores using faster-whisper
   3. Default model is turbo; `--whisper-model` flag switches to other models (e.g., large-v3)
   4. Video extraction output integrates into the standard transcript.json format
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 05-01-PLAN.md -- FFmpeg audio extraction module (probe + extract) and faster-whisper transcription module with anti-hallucination settings
+- [ ] 05-02-PLAN.md -- VideoExtractor adapter wiring (replace stub), faster-whisper dependency, full pipeline integration
 
 ### Phase 6: Video Quality
 **Goal**: Transcription quality is hardened against hallucinations and poor audio through preprocessing and confidence scoring
