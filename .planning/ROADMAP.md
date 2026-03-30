@@ -34,12 +34,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Output files (transcript.json, analysis.json, structured_text.md) are written atomically to the ContentItem directory
   4. Re-running extraction on already-processed content skips it; `--force` re-processes it
   5. Per-item errors are isolated -- a failing item does not abort the batch and quality metadata is recorded
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md -- Project scaffold, Pydantic models (input + output), ContentItem loader
+- [ ] 01-02-PLAN.md -- Adapter Protocol, stub adapters, router registry, atomic output writer
+- [ ] 01-03-PLAN.md -- ExtractorConfig, extract/extract_batch orchestration, error isolation
 
 ### Phase 2: Article Adapter
 **Goal**: Articles are cleaned and structured into markdown, proving the adapter pattern end-to-end with zero external service dependencies
