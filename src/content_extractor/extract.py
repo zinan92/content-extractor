@@ -1,0 +1,120 @@
+"""Top-level extraction orchestration.
+
+``extract_content`` processes a single ContentItem directory through the
+loader -> router -> adapter -> output writer pipeline.
+
+``extract_batch`` scans a parent directory for ContentItem dirs and processes
+each one, isolating per-item errors so a single failure does not abort the
+batch (D-07, QUAL-01).  Errors are printed to stderr (D-09).
+"""
+
+from __future__ import annotations
+
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+from content_extractor.config import ExtractorConfig
+from content_extractor.loader import load_content_item
+from content_extractor.models import ExtractionResult
+from content_extractor.output import is_extracted, write_extraction_output
+from content_extractor.router import get_extractor
+
+
+@dataclass(frozen=True)
+class BatchError:
+    """Captures a per-item extraction failure."""
+
+    content_dir: str
+    error: str
+
+
+@dataclass(frozen=True)
+class BatchResult:
+    """Aggregate result from batch extraction."""
+
+    succeeded: tuple[ExtractionResult, ...]
+    failed: tuple[BatchError, ...]
+    total: int
+    success_count: int
+    failure_count: int
+
+
+def extract_content(
+    content_dir: Path,
+    config: ExtractorConfig | None = None,
+) -> ExtractionResult | None:
+    """Extract content from a single ContentItem directory.
+
+    Pipeline: load -> route -> adapt -> write output.
+
+    Returns the ExtractionResult on success, or None if the item was
+    already extracted and ``config.force_reprocess`` is False.
+    """
+    config = config if config is not None else ExtractorConfig()
+
+    # Skip already-extracted unless force
+    if is_extracted(content_dir) and not config.force_reprocess:
+        return None
+
+    # Load and validate ContentItem
+    item = load_content_item(content_dir)
+
+    # Route to the correct adapter
+    adapter = get_extractor(item.content_type)
+
+    # Run extraction
+    result = adapter.extract(content_dir, config)
+
+    # Write output files
+    write_extraction_output(
+        content_dir, result, item, force=config.force_reprocess
+    )
+
+    return result
+
+
+def extract_batch(
+    parent_dir: Path,
+    config: ExtractorConfig | None = None,
+) -> BatchResult:
+    """Extract content from all ContentItem directories under *parent_dir*.
+
+    Scans recursively for directories containing ``content_item.json``.
+    Per-item errors are isolated -- a failing item does not abort the batch
+    (D-07, QUAL-01).  Errors are printed to stderr (D-09).
+    """
+    config = config if config is not None else ExtractorConfig()
+
+    content_dirs = sorted(
+        p.parent for p in parent_dir.rglob("content_item.json")
+    )
+
+    succeeded: list[ExtractionResult] = []
+    failed: list[BatchError] = []
+
+    for content_dir in content_dirs:
+        try:
+            result = extract_content(content_dir, config)
+            if result is not None:
+                succeeded.append(result)
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f"ERROR extracting {content_dir}: {exc}",
+                file=sys.stderr,
+            )
+            failed.append(
+                BatchError(
+                    content_dir=str(content_dir),
+                    error=str(exc),
+                )
+            )
+
+    total = len(content_dirs)
+    return BatchResult(
+        succeeded=tuple(succeeded),
+        failed=tuple(failed),
+        total=total,
+        success_count=len(succeeded),
+        failure_count=len(failed),
+    )
