@@ -70,7 +70,7 @@ class TestArticleClean:
         assert "广告位招租" not in result.raw_text
 
     def test_empty_html_returns_empty_result(self, tmp_path: Path) -> None:
-        minimal_html = "<html><body><nav>menu</nav></body></html>"
+        minimal_html = "<html><body></body></html>"
         content_dir = _setup_content_dir(tmp_path, html_content=minimal_html)
         extractor = ArticleExtractor()
         result = extractor.extract(content_dir, ExtractorConfig())

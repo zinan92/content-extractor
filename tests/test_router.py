@@ -59,7 +59,7 @@ class TestUnsupportedContentType:
 class TestStubAdapters:
     """Verify stub adapters raise NotImplementedError."""
 
-    @pytest.mark.parametrize("content_type", ["video", "image", "article", "gallery"])
+    @pytest.mark.parametrize("content_type", ["video", "image", "gallery"])
     def test_stub_raises_not_implemented(self, content_type: str) -> None:
         ext = get_extractor(content_type)
         with pytest.raises(NotImplementedError):
