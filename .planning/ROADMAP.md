@@ -104,10 +104,11 @@ Plans:
   1. Non-speech segments (music, silence) are filtered via VAD before transcription
   2. Audio volume is normalized before transcription to handle quiet recordings
   3. Low-confidence transcriptions are flagged with a hallucination warning in the output metadata
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
+- [ ] 06-01-PLAN.md -- Volume normalization (FFmpeg loudnorm), VAD speech-ratio capture from TranscriptionInfo, speech-ratio gating in VideoExtractor
+- [ ] 06-02-PLAN.md -- Hallucination detection heuristics (confidence, chars/sec, repetition), model updates (is_suspicious, hallucination_warnings), VideoExtractor wiring
 
 ### Phase 7: Gallery Adapter
 **Goal**: Multi-image galleries are extracted with batched API calls and synthesized into a coherent narrative
@@ -167,7 +168,7 @@ Phase 4 depends on 1+3. Phase 6 depends on 5. Phase 7 depends on 4. Phase 8 depe
 | 3. LLM Infrastructure | 1/1 | Complete | - |
 | 4. Image Adapter | 1/1 | Complete | - |
 | 5. Video Core | 2/2 | Complete   | 2026-03-30 |
-| 6. Video Quality | 0/1 | Not started | - |
+| 6. Video Quality | 0/2 | Not started | - |
 | 7. Gallery Adapter | 0/1 | Not started | - |
 | 8. LLM Analysis | 0/2 | Not started | - |
 | 9. CLI & Library API | 0/2 | Not started | - |
