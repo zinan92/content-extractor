@@ -8,9 +8,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from content_extractor.analysis import AnalysisError
 from content_extractor.config import ExtractorConfig
 from content_extractor.extract import BatchError, BatchResult, extract_batch, extract_content
-from content_extractor.models import ExtractionResult, QualityMetadata
+from content_extractor.models import AnalysisResult, ExtractionResult, QualityMetadata, SentimentResult
 
 
 def _make_content_item_json(content_dir: Path, content_type: str = "video") -> None:
@@ -98,13 +99,17 @@ class TestExtractContentPipeline:
         assert result.raw_text == "Hello world"
         mock_adapter.extract.assert_called_once()
 
-    def test_stub_adapter_raises_not_implemented(self, tmp_path: Path) -> None:
-        """Stub adapters (gallery) still raise NotImplementedError."""
+    def test_adapter_error_propagates(self, tmp_path: Path) -> None:
+        """Adapter errors propagate to caller when not in batch mode."""
         content_dir = tmp_path / "item1"
-        _make_content_item_json(content_dir, content_type="gallery")
+        _make_content_item_json(content_dir)
 
-        with pytest.raises(NotImplementedError):
-            extract_content(content_dir)
+        mock_adapter = MagicMock()
+        mock_adapter.extract.side_effect = RuntimeError("adapter failed")
+
+        with patch("content_extractor.extract.get_extractor", return_value=mock_adapter):
+            with pytest.raises(RuntimeError, match="adapter failed"):
+                extract_content(content_dir)
 
 
 class TestExtractBatchErrorIsolation:
@@ -112,14 +117,16 @@ class TestExtractBatchErrorIsolation:
 
     def test_batch_error_isolation(self, tmp_path: Path) -> None:
         """All items are processed even when some fail."""
-        # Create 3 content dirs -- all with stub adapters (gallery) that raise
         for i in range(3):
-            _make_content_item_json(tmp_path / f"item{i}", content_type="gallery")
+            _make_content_item_json(tmp_path / f"item{i}")
 
-        result = extract_batch(tmp_path)
+        mock_adapter = MagicMock()
+        mock_adapter.extract.side_effect = RuntimeError("adapter error")
+
+        with patch("content_extractor.extract.get_extractor", return_value=mock_adapter):
+            result = extract_batch(tmp_path)
 
         assert result.total == 3
-        # All fail because image adapters are stubs (NotImplementedError)
         assert result.failure_count == 3
         assert result.success_count == 0
         assert len(result.failed) == 3
@@ -135,14 +142,18 @@ class TestExtractBatchErrorIsolation:
         bad_dir.mkdir(parents=True)
         (bad_dir / "content_item.json").write_text("NOT JSON")
 
-        # item1 and item2 have valid JSON but stub adapters (gallery)
-        _make_content_item_json(tmp_path / "item1", content_type="gallery")
-        _make_content_item_json(tmp_path / "item2", content_type="gallery")
+        # item1 and item2 have valid JSON but adapter raises
+        _make_content_item_json(tmp_path / "item1")
+        _make_content_item_json(tmp_path / "item2")
 
-        result = extract_batch(tmp_path)
+        mock_adapter = MagicMock()
+        mock_adapter.extract.side_effect = RuntimeError("adapter error")
+
+        with patch("content_extractor.extract.get_extractor", return_value=mock_adapter):
+            result = extract_batch(tmp_path)
 
         assert result.total == 3
-        assert result.failure_count == 3  # all fail (bad JSON + stubs)
+        assert result.failure_count == 3  # all fail (bad JSON + adapter errors)
         assert len(result.failed) == 3
 
     def test_batch_empty_dir(self, tmp_path: Path) -> None:
@@ -158,9 +169,13 @@ class TestExtractBatchErrorIsolation:
     def test_batch_result_counts_match(self, tmp_path: Path) -> None:
         """total == success_count + failure_count."""
         for i in range(2):
-            _make_content_item_json(tmp_path / f"item{i}", content_type="gallery")
+            _make_content_item_json(tmp_path / f"item{i}")
 
-        result = extract_batch(tmp_path)
+        mock_adapter = MagicMock()
+        mock_adapter.extract.side_effect = RuntimeError("adapter error")
+
+        with patch("content_extractor.extract.get_extractor", return_value=mock_adapter):
+            result = extract_batch(tmp_path)
 
         assert result.total == result.success_count + result.failure_count
 
@@ -182,7 +197,7 @@ class TestExtractBatchErrorIsolation:
             call_count += 1
             if call_count == 1:
                 return mock_adapter
-            raise NotImplementedError("stub")
+            raise RuntimeError("simulated adapter failure")
 
         with (
             patch("content_extractor.extract.get_extractor", side_effect=patched_get_extractor),

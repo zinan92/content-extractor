@@ -56,16 +56,6 @@ class TestUnsupportedContentType:
         assert "video" in msg
 
 
-class TestStubAdapters:
-    """Verify stub adapters raise NotImplementedError."""
-
-    @pytest.mark.parametrize("content_type", ["gallery"])
-    def test_stub_raises_not_implemented(self, content_type: str) -> None:
-        ext = get_extractor(content_type)
-        with pytest.raises(NotImplementedError):
-            ext.extract(Path("/tmp/fake"), config=None)  # type: ignore[arg-type]
-
-
 class TestAdapterProtocol:
     """Verify all adapters satisfy the Extractor Protocol."""
 
