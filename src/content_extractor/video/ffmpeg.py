@@ -1,10 +1,11 @@
-"""FFmpeg audio extraction and probing via subprocess.
+"""FFmpeg audio extraction, probing, and normalization via subprocess.
 
-Provides two functions:
+Provides three functions:
 - probe_audio_stream: Check if a video has an audio track via ffprobe.
 - extract_audio: Extract audio to 16kHz mono WAV via ffmpeg.
+- normalize_audio: Volume-normalize audio via ffmpeg loudnorm filter.
 
-Both raise FFmpegError on any failure, with descriptive messages.
+All raise FFmpegError on any failure, with descriptive messages.
 """
 
 from __future__ import annotations
@@ -175,5 +176,75 @@ def extract_audio(video_path: Path, output_path: Path) -> Path:
 
     tmp_path.rename(output_path)
     logger.info("Audio extracted successfully: %s", output_path)
+
+    return output_path
+
+
+def normalize_audio(input_path: Path, output_path: Path) -> Path:
+    """Normalize audio volume using ffmpeg loudnorm filter.
+
+    Applies EBU R128 loudness normalization (I=-16, TP=-1.5, LRA=11)
+    and resamples to 16kHz mono WAV for optimal Whisper input.
+
+    Parameters
+    ----------
+    input_path:
+        Path to the source audio file.
+    output_path:
+        Desired path for the normalized output WAV file.
+
+    Returns
+    -------
+    Path
+        The output_path on success.
+
+    Raises
+    ------
+    FFmpegError
+        If input file missing, ffmpeg fails, or output is 0 bytes.
+    """
+    if not input_path.exists():
+        raise FFmpegError(f"Audio file does not exist: {input_path}")
+
+    tmp_path = output_path.with_suffix(".wav.tmp")
+
+    cmd = [
+        "ffmpeg",
+        "-i", str(input_path),
+        "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
+        "-ar", "16000",
+        "-ac", "1",
+        "-y",
+        "-f", "wav",
+        str(tmp_path),
+    ]
+
+    logger.info("Normalizing audio: %s -> %s", input_path, output_path)
+
+    try:
+        completed = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except FileNotFoundError as exc:
+        raise FFmpegError(
+            "ffmpeg not found. Install FFmpeg: brew install ffmpeg"
+        ) from exc
+
+    if completed.returncode != 0:
+        raise FFmpegError(
+            f"ffmpeg failed (exit {completed.returncode}): "
+            f"{completed.stderr}"
+        )
+
+    if not tmp_path.exists() or tmp_path.stat().st_size == 0:
+        raise FFmpegError(
+            f"ffmpeg produced 0 bytes output at {tmp_path}"
+        )
+
+    tmp_path.rename(output_path)
+    logger.info("Audio normalized successfully: %s", output_path)
 
     return output_path

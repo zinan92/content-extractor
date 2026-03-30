@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import math
+from dataclasses import dataclass
 from pathlib import Path
 
 from faster_whisper import WhisperModel
@@ -24,6 +25,25 @@ logger = logging.getLogger(__name__)
 
 class TranscriptionError(Exception):
     """Raised when transcription fails."""
+
+
+@dataclass(frozen=True)
+class TranscriptionResult:
+    """Result of transcription including VAD metadata.
+
+    Attributes
+    ----------
+    segments:
+        Immutable tuple of transcript segments with timestamps.
+    speech_ratio:
+        Fraction of audio containing speech (from VAD), 0.0 to 1.0.
+    duration_seconds:
+        Total audio duration in seconds.
+    """
+
+    segments: tuple[TranscriptSegment, ...]
+    speech_ratio: float
+    duration_seconds: float
 
 
 # Module-level model cache. Justified by ~5s model load time.
@@ -74,7 +94,7 @@ def transcribe_audio(
     *,
     whisper_model: str = "turbo",
     language: str = "zh",
-) -> tuple[TranscriptSegment, ...]:
+) -> TranscriptionResult:
     """Transcribe an audio file using faster-whisper.
 
     Parameters
@@ -88,9 +108,8 @@ def transcribe_audio(
 
     Returns
     -------
-    tuple[TranscriptSegment, ...]
-        Immutable tuple of transcript segments with timestamps
-        and confidence scores.
+    TranscriptionResult
+        Frozen dataclass with segments, speech_ratio, and duration.
 
     Raises
     ------
@@ -99,7 +118,7 @@ def transcribe_audio(
     """
     model = _get_model(whisper_model)
 
-    segments_iter, _info = model.transcribe(
+    segments_iter, info = model.transcribe(
         str(audio_path),
         language=language,
         initial_prompt="以下是普通话的句子。",
@@ -127,4 +146,15 @@ def transcribe_audio(
             )
         )
 
-    return tuple(segments)
+    duration = info.duration if info.duration else 0.0
+    speech_ratio = (
+        info.duration_after_vad / duration
+        if duration > 0
+        else 0.0
+    )
+
+    return TranscriptionResult(
+        segments=tuple(segments),
+        speech_ratio=speech_ratio,
+        duration_seconds=duration,
+    )

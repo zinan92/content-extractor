@@ -16,6 +16,7 @@ from content_extractor.video.ffmpeg import (
     AudioProbeResult,
     FFmpegError,
     extract_audio,
+    normalize_audio,
     probe_audio_stream,
 )
 
@@ -258,5 +259,121 @@ class TestExtractAudio:
             extract_audio(video_path, output_path)
 
         # After success, tmp file should be renamed to output
+        assert output_path.exists()
+        assert not tmp_output.exists()
+
+
+# ---------------------------------------------------------------------------
+# normalize_audio tests
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizeAudio:
+    """Tests for normalize_audio()."""
+
+    def test_normalizes_audio_successfully(self, tmp_path: Path) -> None:
+        """Successful normalization creates WAV at the output path."""
+        input_path = tmp_path / "input.wav"
+        input_path.write_bytes(b"fake-audio")
+        output_path = tmp_path / "normalized.wav"
+
+        def mock_subprocess_run(cmd, **kwargs):
+            mock = MagicMock()
+            mock.returncode = 0
+            # Simulate ffmpeg creating a tmp output file
+            tmp_file = output_path.with_suffix(".wav.tmp")
+            tmp_file.write_bytes(b"RIFF" + b"\x00" * 100)
+            mock.stdout = ""
+            mock.stderr = ""
+            return mock
+
+        with patch("subprocess.run", side_effect=mock_subprocess_run):
+            result = normalize_audio(input_path, output_path)
+
+        assert result == output_path
+        assert output_path.exists()
+
+    def test_uses_loudnorm_filter(self, tmp_path: Path) -> None:
+        """normalize_audio uses loudnorm filter with correct parameters."""
+        input_path = tmp_path / "input.wav"
+        input_path.write_bytes(b"fake-audio")
+        output_path = tmp_path / "normalized.wav"
+
+        def mock_subprocess_run(cmd, **kwargs):
+            mock = MagicMock()
+            mock.returncode = 0
+            tmp_file = output_path.with_suffix(".wav.tmp")
+            tmp_file.write_bytes(b"RIFF" + b"\x00" * 100)
+            mock.stdout = ""
+            mock.stderr = ""
+            # Verify loudnorm filter is in command
+            cmd_str = " ".join(cmd)
+            assert "loudnorm" in cmd_str
+            assert "I=-16" in cmd_str
+            return mock
+
+        with patch("subprocess.run", side_effect=mock_subprocess_run):
+            normalize_audio(input_path, output_path)
+
+    def test_raises_when_ffmpeg_fails(self, tmp_path: Path) -> None:
+        """Raises FFmpegError when ffmpeg exits with error code."""
+        input_path = tmp_path / "input.wav"
+        input_path.write_bytes(b"fake-audio")
+        output_path = tmp_path / "normalized.wav"
+
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stderr = "Normalization failed"
+
+        with patch("subprocess.run", return_value=mock_result):
+            with pytest.raises(FFmpegError, match="ffmpeg failed"):
+                normalize_audio(input_path, output_path)
+
+    def test_raises_when_output_zero_bytes(self, tmp_path: Path) -> None:
+        """Raises FFmpegError when ffmpeg produces 0-byte output."""
+        input_path = tmp_path / "input.wav"
+        input_path.write_bytes(b"fake-audio")
+        output_path = tmp_path / "normalized.wav"
+
+        def mock_subprocess_run(cmd, **kwargs):
+            mock = MagicMock()
+            mock.returncode = 0
+            tmp_file = output_path.with_suffix(".wav.tmp")
+            tmp_file.write_bytes(b"")
+            mock.stdout = ""
+            mock.stderr = ""
+            return mock
+
+        with patch("subprocess.run", side_effect=mock_subprocess_run):
+            with pytest.raises(FFmpegError, match="0 bytes"):
+                normalize_audio(input_path, output_path)
+
+    def test_raises_when_input_not_found(self, tmp_path: Path) -> None:
+        """Raises FFmpegError when input file does not exist."""
+        input_path = tmp_path / "nonexistent.wav"
+        output_path = tmp_path / "normalized.wav"
+
+        with pytest.raises(FFmpegError, match="does not exist"):
+            normalize_audio(input_path, output_path)
+
+    def test_uses_atomic_tmp_file(self, tmp_path: Path) -> None:
+        """normalize_audio writes to .tmp then renames atomically."""
+        input_path = tmp_path / "input.wav"
+        input_path.write_bytes(b"fake-audio")
+        output_path = tmp_path / "normalized.wav"
+        tmp_output = output_path.with_suffix(".wav.tmp")
+
+        def mock_subprocess_run(cmd, **kwargs):
+            mock = MagicMock()
+            mock.returncode = 0
+            assert str(tmp_output) in cmd
+            tmp_output.write_bytes(b"RIFF" + b"\x00" * 100)
+            mock.stdout = ""
+            mock.stderr = ""
+            return mock
+
+        with patch("subprocess.run", side_effect=mock_subprocess_run):
+            normalize_audio(input_path, output_path)
+
         assert output_path.exists()
         assert not tmp_output.exists()

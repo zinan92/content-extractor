@@ -15,6 +15,7 @@ import pytest
 from content_extractor.models import TranscriptSegment
 from content_extractor.video.transcribe import (
     TranscriptionError,
+    TranscriptionResult,
     _model_cache,
     transcribe_audio,
 )
@@ -40,8 +41,8 @@ def _clear_model_cache() -> None:
 class TestTranscribeAudio:
     """Tests for transcribe_audio()."""
 
-    def test_returns_transcript_segments(self, tmp_path: Path) -> None:
-        """Normal segments produce correct TranscriptSegment tuples."""
+    def test_returns_transcription_result(self, tmp_path: Path) -> None:
+        """Normal segments produce TranscriptionResult with segments and speech_ratio."""
         audio_path = tmp_path / "audio.wav"
         audio_path.write_bytes(b"fake-audio")
 
@@ -56,8 +57,12 @@ class TestTranscribeAudio:
             ),
         ]
 
+        mock_info = MagicMock()
+        mock_info.duration = 10.0
+        mock_info.duration_after_vad = 5.0
+
         mock_model = MagicMock()
-        mock_model.transcribe.return_value = (iter(mock_segments), MagicMock())
+        mock_model.transcribe.return_value = (iter(mock_segments), mock_info)
 
         with patch(
             "content_extractor.video.transcribe._get_model",
@@ -65,14 +70,17 @@ class TestTranscribeAudio:
         ):
             result = transcribe_audio(audio_path)
 
-        assert len(result) == 2
-        assert isinstance(result, tuple)
-        assert isinstance(result[0], TranscriptSegment)
-        assert result[0].text == "Hello world"
-        assert result[0].start == 0.0
-        assert result[0].end == 2.5
-        assert result[0].confidence == pytest.approx(math.exp(-0.3), abs=0.001)
-        assert result[1].text == "Second segment"
+        assert isinstance(result, TranscriptionResult)
+        assert len(result.segments) == 2
+        assert isinstance(result.segments, tuple)
+        assert isinstance(result.segments[0], TranscriptSegment)
+        assert result.segments[0].text == "Hello world"
+        assert result.segments[0].start == 0.0
+        assert result.segments[0].end == 2.5
+        assert result.segments[0].confidence == pytest.approx(math.exp(-0.3), abs=0.001)
+        assert result.segments[1].text == "Second segment"
+        assert result.speech_ratio == pytest.approx(0.5, abs=0.001)
+        assert result.duration_seconds == 10.0
 
     def test_filters_high_no_speech_prob(self, tmp_path: Path) -> None:
         """Segments with no_speech_prob > 0.6 are filtered out."""
@@ -94,8 +102,12 @@ class TestTranscribeAudio:
             ),
         ]
 
+        mock_info = MagicMock()
+        mock_info.duration = 6.0
+        mock_info.duration_after_vad = 4.0
+
         mock_model = MagicMock()
-        mock_model.transcribe.return_value = (iter(mock_segments), MagicMock())
+        mock_model.transcribe.return_value = (iter(mock_segments), mock_info)
 
         with patch(
             "content_extractor.video.transcribe._get_model",
@@ -103,9 +115,9 @@ class TestTranscribeAudio:
         ):
             result = transcribe_audio(audio_path)
 
-        assert len(result) == 2
-        assert result[0].text == "Keep me"
-        assert result[1].text == "Boundary"
+        assert len(result.segments) == 2
+        assert result.segments[0].text == "Keep me"
+        assert result.segments[1].text == "Boundary"
 
     def test_confidence_clamped_to_unit_range(self, tmp_path: Path) -> None:
         """Confidence from math.exp is clamped to [0.0, 1.0]."""
@@ -125,8 +137,12 @@ class TestTranscribeAudio:
             ),
         ]
 
+        mock_info = MagicMock()
+        mock_info.duration = 2.0
+        mock_info.duration_after_vad = 2.0
+
         mock_model = MagicMock()
-        mock_model.transcribe.return_value = (iter(mock_segments), MagicMock())
+        mock_model.transcribe.return_value = (iter(mock_segments), mock_info)
 
         with patch(
             "content_extractor.video.transcribe._get_model",
@@ -134,16 +150,61 @@ class TestTranscribeAudio:
         ):
             result = transcribe_audio(audio_path)
 
-        assert result[0].confidence == 1.0  # clamped
-        assert 0.0 <= result[1].confidence <= 1.0
+        assert result.segments[0].confidence == 1.0  # clamped
+        assert 0.0 <= result.segments[1].confidence <= 1.0
+
+    def test_speech_ratio_zero_when_no_duration(self, tmp_path: Path) -> None:
+        """speech_ratio is 0.0 when duration is 0 (division by zero guard)."""
+        audio_path = tmp_path / "audio.wav"
+        audio_path.write_bytes(b"fake-audio")
+
+        mock_info = MagicMock()
+        mock_info.duration = 0.0
+        mock_info.duration_after_vad = 0.0
+
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = (iter([]), mock_info)
+
+        with patch(
+            "content_extractor.video.transcribe._get_model",
+            return_value=mock_model,
+        ):
+            result = transcribe_audio(audio_path)
+
+        assert result.speech_ratio == 0.0
+        assert result.segments == ()
+
+    def test_speech_ratio_computed_from_vad(self, tmp_path: Path) -> None:
+        """speech_ratio = duration_after_vad / duration."""
+        audio_path = tmp_path / "audio.wav"
+        audio_path.write_bytes(b"fake-audio")
+
+        mock_info = MagicMock()
+        mock_info.duration = 100.0
+        mock_info.duration_after_vad = 25.0
+
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = (iter([]), mock_info)
+
+        with patch(
+            "content_extractor.video.transcribe._get_model",
+            return_value=mock_model,
+        ):
+            result = transcribe_audio(audio_path)
+
+        assert result.speech_ratio == pytest.approx(0.25, abs=0.001)
 
     def test_uses_default_language_zh(self, tmp_path: Path) -> None:
         """Language defaults to 'zh' and initial_prompt is passed."""
         audio_path = tmp_path / "audio.wav"
         audio_path.write_bytes(b"fake-audio")
 
+        mock_info = MagicMock()
+        mock_info.duration = 10.0
+        mock_info.duration_after_vad = 8.0
+
         mock_model = MagicMock()
-        mock_model.transcribe.return_value = (iter([]), MagicMock())
+        mock_model.transcribe.return_value = (iter([]), mock_info)
 
         with patch(
             "content_extractor.video.transcribe._get_model",
@@ -162,8 +223,12 @@ class TestTranscribeAudio:
         audio_path = tmp_path / "audio.wav"
         audio_path.write_bytes(b"fake-audio")
 
+        mock_info = MagicMock()
+        mock_info.duration = 10.0
+        mock_info.duration_after_vad = 8.0
+
         mock_model = MagicMock()
-        mock_model.transcribe.return_value = (iter([]), MagicMock())
+        mock_model.transcribe.return_value = (iter([]), mock_info)
 
         with patch(
             "content_extractor.video.transcribe._get_model",
@@ -179,8 +244,12 @@ class TestTranscribeAudio:
         audio_path = tmp_path / "audio.wav"
         audio_path.write_bytes(b"fake-audio")
 
+        mock_info = MagicMock()
+        mock_info.duration = 10.0
+        mock_info.duration_after_vad = 8.0
+
         mock_model = MagicMock()
-        mock_model.transcribe.return_value = (iter([]), MagicMock())
+        mock_model.transcribe.return_value = (iter([]), mock_info)
 
         with patch(
             "content_extractor.video.transcribe._get_model",
@@ -195,8 +264,12 @@ class TestTranscribeAudio:
         audio_path = tmp_path / "audio.wav"
         audio_path.write_bytes(b"fake-audio")
 
+        mock_info = MagicMock()
+        mock_info.duration = 10.0
+        mock_info.duration_after_vad = 8.0
+
         mock_model = MagicMock()
-        mock_model.transcribe.return_value = (iter([]), MagicMock())
+        mock_model.transcribe.return_value = (iter([]), mock_info)
 
         with patch(
             "content_extractor.video.transcribe._get_model",
