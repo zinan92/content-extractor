@@ -12,6 +12,7 @@ from content_extractor.models import (
     AnalysisResult,
     ContentItem,
     ExtractionResult,
+    SentimentResult,
     Transcript,
     TranscriptSegment,
 )
@@ -270,3 +271,132 @@ class TestWriteExtractionOutput:
         assert "Test Author" in md
         assert "douyin" in md
         assert "Hello world, this is a test transcript." in md
+
+
+# ---------------------------------------------------------------------------
+# Analysis integration tests (Phase 8)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def filled_analysis() -> AnalysisResult:
+    """An AnalysisResult with real data for testing output rendering."""
+    return AnalysisResult(
+        content_id="content123",
+        content_type="video",
+        topics=("AI regulation", "tech policy", "EU compliance"),
+        viewpoints=("Regulation is necessary", "Over-regulation stifles innovation"),
+        sentiment=SentimentResult(overall="mixed", confidence=0.82),
+        takeaways=("Monitor EU AI Act timelines", "Prepare compliance roadmap"),
+    )
+
+
+@pytest.fixture()
+def empty_analysis() -> AnalysisResult:
+    """An AnalysisResult with no data (fallback/placeholder)."""
+    return AnalysisResult(
+        content_id="content123",
+        content_type="video",
+    )
+
+
+class TestWriteExtractionOutputWithAnalysis:
+    """write_extraction_output with real AnalysisResult data."""
+
+    def test_analysis_json_with_real_data(
+        self,
+        content_dir: Path,
+        sample_extraction_result: ExtractionResult,
+        sample_content_item: ContentItem,
+        filled_analysis: AnalysisResult,
+    ) -> None:
+        """Test 1: analysis.json contains real topics, viewpoints, sentiment, takeaways."""
+        write_extraction_output(
+            content_dir,
+            sample_extraction_result,
+            sample_content_item,
+            analysis=filled_analysis,
+        )
+        data = orjson.loads((content_dir / "analysis.json").read_bytes())
+        assert data["content_id"] == "content123"
+        assert data["topics"] == ["AI regulation", "tech policy", "EU compliance"]
+        assert len(data["viewpoints"]) == 2
+        assert data["sentiment"]["overall"] == "mixed"
+        assert data["sentiment"]["confidence"] == pytest.approx(0.82)
+        assert len(data["takeaways"]) == 2
+
+    def test_structured_text_with_real_analysis(
+        self,
+        content_dir: Path,
+        sample_extraction_result: ExtractionResult,
+        sample_content_item: ContentItem,
+        filled_analysis: AnalysisResult,
+    ) -> None:
+        """Test 2: structured_text.md renders real Summary, Key Takeaways, Analysis."""
+        write_extraction_output(
+            content_dir,
+            sample_extraction_result,
+            sample_content_item,
+            analysis=filled_analysis,
+        )
+        md = (content_dir / "structured_text.md").read_text(encoding="utf-8")
+
+        # Summary section has real topics
+        assert "AI regulation" in md
+        assert "tech policy" in md
+
+        # Key Takeaways are rendered as bullets
+        assert "- Monitor EU AI Act timelines" in md
+        assert "- Prepare compliance roadmap" in md
+
+        # Analysis section has topics, viewpoints, sentiment
+        assert "**Topics:**" in md
+        assert "**Viewpoints:**" in md
+        assert "- Regulation is necessary" in md
+        assert "**Sentiment:** Overall: mixed (confidence: 0.82)" in md
+
+        # No placeholder text
+        assert "Populated by analysis phase" not in md
+
+    def test_structured_text_with_empty_analysis(
+        self,
+        content_dir: Path,
+        sample_extraction_result: ExtractionResult,
+        sample_content_item: ContentItem,
+        empty_analysis: AnalysisResult,
+    ) -> None:
+        """Test 3: empty AnalysisResult renders valid markdown without crash."""
+        write_extraction_output(
+            content_dir,
+            sample_extraction_result,
+            sample_content_item,
+            analysis=empty_analysis,
+        )
+        md = (content_dir / "structured_text.md").read_text(encoding="utf-8")
+
+        assert "## Summary" in md
+        assert "No analysis available." in md
+        assert "No takeaways identified." in md
+        assert "## Full Transcript/Content" in md
+
+    def test_backward_compatible_no_analysis(
+        self,
+        content_dir: Path,
+        sample_extraction_result: ExtractionResult,
+        sample_content_item: ContentItem,
+    ) -> None:
+        """Test 4: when analysis=None (default), writes placeholder."""
+        write_extraction_output(
+            content_dir,
+            sample_extraction_result,
+            sample_content_item,
+        )
+        data = orjson.loads((content_dir / "analysis.json").read_bytes())
+        assert data["content_id"] == "content123"
+        assert data["topics"] == []  # empty placeholder
+        assert data["viewpoints"] == []
+        assert data["sentiment"] is None
+        assert data["takeaways"] == []
+
+        md = (content_dir / "structured_text.md").read_text(encoding="utf-8")
+        assert "No analysis available." in md

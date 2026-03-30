@@ -88,23 +88,72 @@ def _render_structured_text(
     item_likes: int = 0,
     item_comments: int = 0,
     item_shares: int = 0,
+    analysis: AnalysisResult | None = None,
 ) -> str:
-    """Render structured_text.md in D-04 report format."""
-    return (
+    """Render structured_text.md in D-04 report format.
+
+    When *analysis* is provided with populated fields, renders real
+    Summary, Key Takeaways, and Analysis sections. Otherwise falls back
+    to placeholder text.
+    """
+    header = (
         f"# {item_title}\n"
         f"\n"
         f"**Author:** {item_author} | **Platform:** {item_platform}"
         f" | **Published:** {item_publish_time}\n"
         f"**Engagement:** {item_likes} likes, {item_comments} comments,"
         f" {item_shares} shares\n"
+    )
+
+    # Determine if analysis has any real content
+    has_analysis = (
+        analysis is not None
+        and (analysis.topics or analysis.viewpoints or analysis.takeaways or analysis.sentiment)
+    )
+
+    # Summary section
+    if has_analysis and analysis is not None and analysis.topics:
+        summary = f"This content covers: {', '.join(analysis.topics)}."
+    else:
+        summary = "No analysis available."
+
+    # Key Takeaways section
+    if has_analysis and analysis is not None and analysis.takeaways:
+        takeaway_lines = "\n".join(f"- {t}" for t in analysis.takeaways)
+    else:
+        takeaway_lines = "No takeaways identified."
+
+    # Analysis section
+    if has_analysis and analysis is not None:
+        analysis_parts: list[str] = []
+
+        if analysis.topics:
+            analysis_parts.append(f"**Topics:** {', '.join(analysis.topics)}")
+
+        if analysis.viewpoints:
+            vp_lines = "\n".join(f"- {v}" for v in analysis.viewpoints)
+            analysis_parts.append(f"**Viewpoints:**\n{vp_lines}")
+
+        if analysis.sentiment is not None:
+            analysis_parts.append(
+                f"**Sentiment:** Overall: {analysis.sentiment.overall}"
+                f" (confidence: {analysis.sentiment.confidence})"
+            )
+
+        analysis_text = "\n\n".join(analysis_parts) if analysis_parts else "No analysis available."
+    else:
+        analysis_text = "No analysis available."
+
+    return (
+        f"{header}"
         f"\n"
         f"## Summary\n"
         f"\n"
-        f"*Populated by analysis phase.*\n"
+        f"{summary}\n"
         f"\n"
         f"## Key Takeaways\n"
         f"\n"
-        f"*Populated by analysis phase.*\n"
+        f"{takeaway_lines}\n"
         f"\n"
         f"## Full Transcript/Content\n"
         f"\n"
@@ -112,7 +161,7 @@ def _render_structured_text(
         f"\n"
         f"## Analysis\n"
         f"\n"
-        f"*Populated by analysis phase.*\n"
+        f"{analysis_text}\n"
     )
 
 
@@ -127,12 +176,15 @@ def write_extraction_output(
     content_item: "ContentItem",
     *,
     force: bool = False,
+    analysis: AnalysisResult | None = None,
 ) -> bool:
     """Write all extraction output files to content_dir.
 
     Returns True if files were written, False if skipped (already extracted).
 
-    When force=True, clears the marker and re-writes all files (FOUND-05).
+    When *analysis* is provided, writes real analysis data; otherwise writes
+    a placeholder. When force=True, clears the marker and re-writes all
+    files (FOUND-05).
     """
     if is_extracted(content_dir) and not force:
         return False
@@ -156,13 +208,13 @@ def write_extraction_output(
         )
     write_json_atomic(content_dir / "transcript.json", transcript_data)
 
-    # analysis.json (placeholder -- populated by Phase 8)
-    placeholder_analysis = AnalysisResult(
+    # analysis.json -- use provided analysis or fallback to placeholder
+    effective_analysis = analysis if analysis is not None else AnalysisResult(
         content_id=result.content_id,
         content_type=result.content_type,
     )
     analysis_data = orjson.dumps(
-        placeholder_analysis.model_dump(), option=orjson.OPT_INDENT_2
+        effective_analysis.model_dump(), option=orjson.OPT_INDENT_2
     )
     write_json_atomic(content_dir / "analysis.json", analysis_data)
 
@@ -176,6 +228,7 @@ def write_extraction_output(
         item_likes=content_item.likes,
         item_comments=content_item.comments,
         item_shares=content_item.shares,
+        analysis=effective_analysis,
     )
     write_text_atomic(content_dir / "structured_text.md", md_text)
 
