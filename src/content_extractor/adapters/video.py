@@ -22,8 +22,13 @@ from content_extractor.models import (
     Transcript,
     TranscriptSegment,
 )
-from content_extractor.video.ffmpeg import extract_audio, probe_audio_stream
-from content_extractor.video.transcribe import transcribe_audio
+from content_extractor.video.ffmpeg import (
+    FFmpegError,
+    extract_audio,
+    normalize_audio,
+    probe_audio_stream,
+)
+from content_extractor.video.transcribe import TranscriptionResult, transcribe_audio
 
 logger = logging.getLogger(__name__)
 
@@ -116,19 +121,58 @@ class VideoExtractor:
 
         # Extract audio to temp WAV
         wav_path = content_dir / "media" / ".tmp_audio.wav"
+        normalized_path = content_dir / "media" / ".tmp_normalized.wav"
 
         try:
             extract_audio(video_path, wav_path)
-            segments = transcribe_audio(
-                wav_path,
+
+            # Normalize audio volume (non-fatal on failure)
+            audio_path = wav_path
+            try:
+                normalize_audio(wav_path, normalized_path)
+                audio_path = normalized_path
+            except FFmpegError:
+                logger.warning(
+                    "Audio normalization failed for %s, using unnormalized audio",
+                    video_path,
+                )
+
+            transcription = transcribe_audio(
+                audio_path,
                 whisper_model=config.whisper_model,
             )
         finally:
-            # Always clean up temp file
-            if wav_path.exists():
-                wav_path.unlink()
+            # Always clean up temp files
+            for tmp in (wav_path, normalized_path):
+                if tmp.exists():
+                    tmp.unlink()
 
+        segments = transcription.segments
+        speech_ratio = transcription.speech_ratio
         elapsed = time.monotonic() - start_time
+        platform_meta = _build_platform_metadata(item)
+
+        # Gate on speech ratio: skip transcription for non-speech audio
+        if speech_ratio < 0.10:
+            logger.info(
+                "Low speech ratio (%.2f) for %s, skipping transcript",
+                speech_ratio,
+                video_path,
+            )
+            platform_meta["low_speech_ratio"] = f"{speech_ratio:.2f}"
+            return ExtractionResult(
+                content_id=item.content_id,
+                content_type="video",
+                raw_text="",
+                transcript=None,
+                quality=QualityMetadata(
+                    confidence=0.0,
+                    language="zh",
+                    word_count=0,
+                    processing_time_seconds=elapsed,
+                ),
+                platform_metadata=platform_meta,
+            )
 
         # Build transcript
         full_text = " ".join(seg.text for seg in segments)
@@ -160,5 +204,5 @@ class VideoExtractor:
             raw_text=full_text,
             transcript=transcript,
             quality=quality,
-            platform_metadata=_build_platform_metadata(item),
+            platform_metadata=platform_meta,
         )

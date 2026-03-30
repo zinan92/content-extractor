@@ -22,6 +22,7 @@ from content_extractor.models import (
     TranscriptSegment,
 )
 from content_extractor.video.ffmpeg import AudioProbeResult
+from content_extractor.video.transcribe import TranscriptionResult
 
 
 # ---------------------------------------------------------------------------
@@ -77,6 +78,18 @@ def mock_segments() -> tuple[TranscriptSegment, ...]:
 
 
 @pytest.fixture()
+def mock_transcription_result(
+    mock_segments: tuple[TranscriptSegment, ...],
+) -> TranscriptionResult:
+    """Sample TranscriptionResult with healthy speech ratio."""
+    return TranscriptionResult(
+        segments=mock_segments,
+        speech_ratio=0.85,
+        duration_seconds=60.0,
+    )
+
+
+@pytest.fixture()
 def probe_with_audio() -> AudioProbeResult:
     """Probe result indicating audio is present."""
     return AudioProbeResult(
@@ -111,7 +124,7 @@ class TestVideoExtractor:
         content_dir: Path,
         config: ExtractorConfig,
         probe_with_audio: AudioProbeResult,
-        mock_segments: tuple[TranscriptSegment, ...],
+        mock_transcription_result: TranscriptionResult,
     ) -> None:
         """Full pipeline produces ExtractionResult with transcript."""
         extractor = VideoExtractor()
@@ -131,7 +144,11 @@ class TestVideoExtractor:
             ),
             patch(
                 "content_extractor.adapters.video.transcribe_audio",
-                return_value=mock_segments,
+                return_value=mock_transcription_result,
+            ),
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=lambda inp, out: out,
             ),
         ):
             result = extractor.extract(content_dir, config)
@@ -192,9 +209,9 @@ class TestVideoExtractor:
         content_dir: Path,
         config: ExtractorConfig,
         probe_with_audio: AudioProbeResult,
-        mock_segments: tuple[TranscriptSegment, ...],
+        mock_transcription_result: TranscriptionResult,
     ) -> None:
-        """Temporary WAV file is removed after successful extraction."""
+        """Temporary WAV files are removed after successful extraction."""
         extractor = VideoExtractor()
 
         def mock_extract_audio(video_path: Path, output_path: Path) -> Path:
@@ -212,14 +229,20 @@ class TestVideoExtractor:
             ),
             patch(
                 "content_extractor.adapters.video.transcribe_audio",
-                return_value=mock_segments,
+                return_value=mock_transcription_result,
+            ),
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=lambda inp, out: out,
             ),
         ):
             extractor.extract(content_dir, config)
 
-        # Temp WAV should be cleaned up
+        # Temp WAV files should be cleaned up
         tmp_wav = content_dir / "media" / ".tmp_audio.wav"
+        tmp_norm = content_dir / "media" / ".tmp_normalized.wav"
         assert not tmp_wav.exists()
+        assert not tmp_norm.exists()
 
     def test_temp_wav_cleaned_up_on_error(
         self,
@@ -227,7 +250,7 @@ class TestVideoExtractor:
         config: ExtractorConfig,
         probe_with_audio: AudioProbeResult,
     ) -> None:
-        """Temporary WAV file is removed even when transcription fails."""
+        """Temporary WAV files are removed even when transcription fails."""
         extractor = VideoExtractor()
 
         def mock_extract_audio(video_path: Path, output_path: Path) -> Path:
@@ -242,6 +265,10 @@ class TestVideoExtractor:
             patch(
                 "content_extractor.adapters.video.extract_audio",
                 side_effect=mock_extract_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=lambda inp, out: out,
             ),
             patch(
                 "content_extractor.adapters.video.transcribe_audio",
@@ -258,7 +285,7 @@ class TestVideoExtractor:
         self,
         content_dir: Path,
         probe_with_audio: AudioProbeResult,
-        mock_segments: tuple[TranscriptSegment, ...],
+        mock_transcription_result: TranscriptionResult,
     ) -> None:
         """config.whisper_model is forwarded to transcribe_audio."""
         config = ExtractorConfig(whisper_model="large-v3")
@@ -279,8 +306,12 @@ class TestVideoExtractor:
             ),
             patch(
                 "content_extractor.adapters.video.transcribe_audio",
-                return_value=mock_segments,
+                return_value=mock_transcription_result,
             ) as mock_transcribe,
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=lambda inp, out: out,
+            ),
         ):
             extractor.extract(content_dir, config)
 
@@ -292,7 +323,7 @@ class TestVideoExtractor:
         content_dir: Path,
         config: ExtractorConfig,
         probe_with_audio: AudioProbeResult,
-        mock_segments: tuple[TranscriptSegment, ...],
+        mock_transcription_result: TranscriptionResult,
     ) -> None:
         """Platform metadata includes non-zero engagement fields."""
         extractor = VideoExtractor()
@@ -312,7 +343,11 @@ class TestVideoExtractor:
             ),
             patch(
                 "content_extractor.adapters.video.transcribe_audio",
-                return_value=mock_segments,
+                return_value=mock_transcription_result,
+            ),
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=lambda inp, out: out,
             ),
         ):
             result = extractor.extract(content_dir, config)
@@ -322,3 +357,85 @@ class TestVideoExtractor:
         assert result.platform_metadata["shares"] == 10
         assert result.platform_metadata["views"] == 5000
         assert result.platform_metadata["collects"] == 50
+
+    def test_normalization_failure_falls_back(
+        self,
+        content_dir: Path,
+        config: ExtractorConfig,
+        probe_with_audio: AudioProbeResult,
+        mock_transcription_result: TranscriptionResult,
+    ) -> None:
+        """Normalization failure falls back to unnormalized audio."""
+        from content_extractor.video.ffmpeg import FFmpegError
+
+        extractor = VideoExtractor()
+
+        def mock_extract_audio(video_path: Path, output_path: Path) -> Path:
+            output_path.write_bytes(b"fake-wav")
+            return output_path
+
+        with (
+            patch(
+                "content_extractor.adapters.video.probe_audio_stream",
+                return_value=probe_with_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.extract_audio",
+                side_effect=mock_extract_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=FFmpegError("normalization failed"),
+            ),
+            patch(
+                "content_extractor.adapters.video.transcribe_audio",
+                return_value=mock_transcription_result,
+            ),
+        ):
+            result = extractor.extract(content_dir, config)
+
+        # Should still succeed with transcript
+        assert result.transcript is not None
+        assert len(result.transcript.segments) == 2
+
+    def test_low_speech_ratio_skips_transcription(
+        self,
+        content_dir: Path,
+        config: ExtractorConfig,
+        probe_with_audio: AudioProbeResult,
+    ) -> None:
+        """Videos with <10% speech return result with confidence=0.0."""
+        extractor = VideoExtractor()
+
+        low_speech_result = TranscriptionResult(
+            segments=(),
+            speech_ratio=0.05,
+            duration_seconds=60.0,
+        )
+
+        def mock_extract_audio(video_path: Path, output_path: Path) -> Path:
+            output_path.write_bytes(b"fake-wav")
+            return output_path
+
+        with (
+            patch(
+                "content_extractor.adapters.video.probe_audio_stream",
+                return_value=probe_with_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.extract_audio",
+                side_effect=mock_extract_audio,
+            ),
+            patch(
+                "content_extractor.adapters.video.normalize_audio",
+                side_effect=lambda inp, out: out,
+            ),
+            patch(
+                "content_extractor.adapters.video.transcribe_audio",
+                return_value=low_speech_result,
+            ),
+        ):
+            result = extractor.extract(content_dir, config)
+
+        assert result.quality.confidence == 0.0
+        assert result.platform_metadata.get("low_speech_ratio") is not None
