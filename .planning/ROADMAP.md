@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Project scaffold, Pydantic models (input + output), ContentItem loader
+- [x] 01-01-PLAN.md -- Project scaffold, Pydantic models (input + output), ContentItem loader
 - [ ] 01-02-PLAN.md -- Adapter Protocol, stub adapters, router registry, atomic output writer
 - [ ] 01-03-PLAN.md -- ExtractorConfig, extract/extract_batch orchestration, error isolation
 

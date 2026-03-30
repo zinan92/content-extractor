@@ -7,9 +7,9 @@
 
 ### Foundation
 
-- [ ] **FOUND-01**: Load and validate ContentItem from `content_item.json` using own Pydantic model (no import from content-downloader)
+- [x] **FOUND-01**: Load and validate ContentItem from `content_item.json` using own Pydantic model (no import from content-downloader)
 - [ ] **FOUND-02**: Route content to correct adapter based on `content_type` field (video/image/article/gallery)
-- [ ] **FOUND-03**: Define standardized output Pydantic models for transcript, analysis, and extraction result
+- [x] **FOUND-03**: Define standardized output Pydantic models for transcript, analysis, and extraction result
 - [ ] **FOUND-04**: Write output files (`transcript.json`, `analysis.json`, `structured_text.md`) to ContentItem directory
 - [ ] **FOUND-05**: Skip already-extracted content by checking output file existence (idempotent); `--force` flag to override
 - [ ] **FOUND-06**: Configuration system for Whisper model, LLM settings, and default behaviors
@@ -69,9 +69,9 @@
 ### Quality & Reliability
 
 - [ ] **QUAL-01**: Per-item error isolation — one failed image in gallery does not fail the whole item
-- [ ] **QUAL-02**: Extraction quality metadata per item (confidence, language, word count, processing time)
+- [x] **QUAL-02**: Extraction quality metadata per item (confidence, language, word count, processing time)
 - [ ] **QUAL-03**: Atomic file writes — partial output never left behind on failure
-- [ ] **QUAL-04**: Preserve platform metadata (author, date, engagement metrics) in output
+- [x] **QUAL-04**: Preserve platform metadata (author, date, engagement metrics) in output
 
 ## v2 Requirements
 
@@ -106,16 +106,16 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1: Foundation & Data Models | Pending |
+| FOUND-01 | Phase 1: Foundation & Data Models | Complete |
 | FOUND-02 | Phase 1: Foundation & Data Models | Pending |
-| FOUND-03 | Phase 1: Foundation & Data Models | Pending |
+| FOUND-03 | Phase 1: Foundation & Data Models | Complete |
 | FOUND-04 | Phase 1: Foundation & Data Models | Pending |
 | FOUND-05 | Phase 1: Foundation & Data Models | Pending |
 | FOUND-06 | Phase 1: Foundation & Data Models | Pending |
 | QUAL-01 | Phase 1: Foundation & Data Models | Pending |
-| QUAL-02 | Phase 1: Foundation & Data Models | Pending |
+| QUAL-02 | Phase 1: Foundation & Data Models | Complete |
 | QUAL-03 | Phase 1: Foundation & Data Models | Pending |
-| QUAL-04 | Phase 1: Foundation & Data Models | Pending |
+| QUAL-04 | Phase 1: Foundation & Data Models | Complete |
 | ARTC-01 | Phase 2: Article Adapter | Pending |
 | ARTC-02 | Phase 2: Article Adapter | Pending |
 | ARTC-03 | Phase 2: Article Adapter | Pending |
