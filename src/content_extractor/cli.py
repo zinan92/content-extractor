@@ -32,11 +32,65 @@ _console = Console()
 _err_console = Console(stderr=True)
 
 
+_VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".avi", ".webm", ".flv", ".m4v"}
+_AUDIO_EXTS = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
+
+
+def _wrap_bare_file(file_path: Path) -> Path:
+    """Create a temporary ContentItem directory for a bare media file.
+
+    Returns a directory that looks like a content-downloader output so the
+    rest of the extraction pipeline works unchanged.
+    """
+    import json
+    import shutil
+    from datetime import datetime, timezone
+
+    stem = file_path.stem
+    tmp_dir = file_path.parent / f".extract-tmp-{stem}"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    media_dir = tmp_dir / "media"
+    media_dir.mkdir(exist_ok=True)
+
+    dest = media_dir / file_path.name
+    if not dest.exists():
+        shutil.copy2(file_path, dest)
+
+    suffix = file_path.suffix.lower()
+    if suffix in _VIDEO_EXTS:
+        content_type = "video"
+    elif suffix in _AUDIO_EXTS:
+        content_type = "audio"
+    else:
+        content_type = "video"
+
+    item = {
+        "platform": "local",
+        "content_id": stem,
+        "content_type": content_type,
+        "title": stem,
+        "description": "",
+        "author_id": "local",
+        "author_name": "local",
+        "publish_time": datetime.now(tz=timezone.utc).isoformat(),
+        "source_url": str(file_path.resolve()),
+        "media_files": [f"media/{file_path.name}"],
+        "downloaded_at": datetime.now(tz=timezone.utc).isoformat(),
+    }
+
+    (tmp_dir / "content_item.json").write_text(
+        json.dumps(item, ensure_ascii=False, indent=2)
+    )
+
+    return tmp_dir
+
+
 @app.command()
 def extract(
     path: Path = typer.Argument(
         ...,
-        help="Path to a ContentItem directory containing content_item.json.",
+        help="Path to a ContentItem directory or a single video/audio file.",
     ),
     whisper_model: str = typer.Option(
         "turbo",
@@ -49,10 +103,23 @@ def extract(
         help="Reprocess even if already extracted.",
     ),
 ) -> None:
-    """Extract content from a single ContentItem directory."""
-    if not path.exists() or not path.is_dir():
+    """Extract content from a single ContentItem directory or media file."""
+    if not path.exists():
+        _err_console.print(f"[red]Error:[/red] Path does not exist: {path}")
+        raise typer.Exit(code=1)
+
+    # If user passed a bare media file, wrap it into a ContentItem directory
+    wrapped = False
+    if path.is_file() and path.suffix.lower() in (_VIDEO_EXTS | _AUDIO_EXTS):
+        _console.print(
+            f"[dim]Detected bare media file. Wrapping as ContentItem...[/dim]"
+        )
+        path = _wrap_bare_file(path)
+        wrapped = True
+
+    if not path.is_dir():
         _err_console.print(
-            f"[red]Error:[/red] Path does not exist or is not a directory: {path}"
+            f"[red]Error:[/red] Expected a directory or media file (.mp4/.mp3/etc), got: {path}"
         )
         raise typer.Exit(code=1)
 
