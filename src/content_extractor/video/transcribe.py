@@ -123,7 +123,9 @@ def transcribe_audio(
         language=language,
         initial_prompt="以下是普通话的句子。",
         condition_on_previous_text=False,
-        beam_size=5,
+        beam_size=1,
+        best_of=1,
+        temperature=0.0,
         vad_filter=True,
         vad_parameters={"min_silence_duration_ms": 500},
     )

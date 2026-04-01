@@ -89,6 +89,80 @@ class VideoExtractor:
 
     content_type: str = "video"
 
+    @staticmethod
+    def _load_from_transcript_json(
+        json_path: Path,
+        item: object,
+        start_time: float,
+        content_dir: Path,
+    ) -> ExtractionResult:
+        """Load an ExtractionResult from an existing transcript.json file."""
+        import json as _json
+
+        raw = _json.loads(json_path.read_text())
+        segments_data = raw.get("segments", [])
+
+        segments = tuple(
+            TranscriptSegment(
+                text=s["text"],
+                start=s["start"],
+                end=s["end"],
+                confidence=s.get("confidence", 0.9),
+                is_suspicious=s.get("is_suspicious", False),
+            )
+            for s in segments_data
+        )
+
+        full_text = raw.get("full_text", " ".join(s.text for s in segments))
+        language = raw.get("language", "zh")
+        content_id = raw.get("content_id", getattr(item, "content_id", "unknown"))
+        elapsed = time.monotonic() - start_time
+
+        # Preserve no-audio/low-speech semantics: if no segments and no text,
+        # return the same fallback shape as the no-audio path
+        if not segments and not full_text.strip():
+            return ExtractionResult(
+                content_id=content_id,
+                content_type="video",
+                raw_text="",
+                transcript=None,
+                quality=QualityMetadata(
+                    confidence=0.0,
+                    language=language,
+                    word_count=0,
+                    processing_time_seconds=elapsed,
+                ),
+                platform_metadata=_build_platform_metadata(item),
+            )
+
+        avg_confidence = (
+            sum(s.confidence for s in segments) / len(segments)
+            if segments
+            else 0.0
+        )
+
+        transcript = Transcript(
+            content_id=content_id,
+            content_type="video",
+            language=language,
+            segments=segments,
+            full_text=full_text,
+        )
+
+        return ExtractionResult(
+            content_id=content_id,
+            content_type="video",
+            raw_text=full_text,
+            transcript=transcript,
+            quality=QualityMetadata(
+                confidence=avg_confidence,
+                language=language,
+                word_count=_compute_word_count(full_text),
+                processing_time_seconds=elapsed,
+            ),
+            platform_metadata=_build_platform_metadata(item),
+        )
+
     def extract(
         self, content_dir: Path, config: ExtractorConfig
     ) -> ExtractionResult:
@@ -96,12 +170,32 @@ class VideoExtractor:
 
         Pipeline: find video -> probe -> extract audio -> transcribe -> result.
 
+        If transcript.json already exists, reuses it instead of re-running
+        Whisper (which can take 30+ minutes for long videos on CPU).
+        Use --force to bypass this cache and re-transcribe.
+
         Videos with no audio stream return a result with empty transcript
         and confidence=0.0 (not an error).
         """
         item = load_content_item(content_dir)
-        video_path = _find_video_file(content_dir)
         start_time = time.monotonic()
+
+        # Reuse existing transcript.json if available (skip expensive Whisper)
+        existing_transcript = content_dir / "transcript.json"
+        if existing_transcript.exists() and not config.force_reprocess:
+            try:
+                result = self._load_from_transcript_json(
+                    existing_transcript, item, start_time, content_dir
+                )
+                logger.info("Reusing existing transcript.json for %s", item.content_id)
+                return result
+            except Exception as exc:
+                logger.warning(
+                    "Failed to load cached transcript.json for %s: %s. Re-transcribing.",
+                    item.content_id, exc,
+                )
+
+        video_path = _find_video_file(content_dir)
 
         # Probe for audio stream
         probe = probe_audio_stream(video_path)

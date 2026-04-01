@@ -54,10 +54,76 @@ Rules:
 - Return ONLY valid JSON, no markdown fences or extra text
 """
 
+_RESTRUCTURE_PROMPT = """\
+你是一个内容编辑。下面是一段口播视频的语音转录原文（由 Whisper 生成），没有标点、没有分段、没有结构。
+
+请你把它整理成一篇**结构清晰、可读性强**的文章。要求：
+
+1. **加标点符号**：句号、逗号、问号、感叹号，让句子完整
+2. **分段落**：按话题/语义自然分段，每段 3-5 句话
+3. **加小标题**：用 ## 标记每个话题段落的主题（简短有力，4-10 个字）
+4. **保留原意**：不要改变说话者的观点和用词，只做格式整理
+5. **去除口语冗余**：去掉反复的「OK」「那个」「就是说」等语气词，但保留口语化的表达风格
+6. **标记金句**：特别有力的句子用 **加粗** 标记
+
+输出纯 Markdown，不要加任何前言或解释。直接输出整理后的文章。
+"""
+
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+
+def restructure_transcript(
+    raw_text: str,
+    *,
+    config: ExtractorConfig | None = None,
+) -> str | None:
+    """Restructure raw Whisper transcript into readable, structured markdown.
+
+    Returns the structured text, or None if LLM call fails.
+    """
+    config = config if config is not None else ExtractorConfig()
+
+    if not raw_text or not raw_text.strip():
+        return None
+
+    # Skip restructuring for very long transcripts rather than silently truncating
+    max_chars = 25000  # ~6k tokens in Chinese
+    if len(raw_text) > max_chars:
+        logger.info(
+            "Transcript too long for restructuring (%d chars > %d limit), keeping raw text",
+            len(raw_text), max_chars,
+        )
+        return None
+    text_to_process = raw_text
+
+    client = create_claude_client(config)
+
+    try:
+        response = client.messages.create(
+            model=config.claude_model,
+            max_tokens=8192,
+            temperature=0.0,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"{_RESTRUCTURE_PROMPT}\n\n---\n\n{text_to_process}",
+                }
+            ],
+        )
+    except Exception as exc:
+        logger.warning("Transcript restructuring failed: %s", exc)
+        return None
+
+    structured = ""
+    for block in response.content:
+        if getattr(block, "type", None) == "text":
+            structured = block.text
+            break
+
+    return structured if structured.strip() else None
 
 
 def analyze_content(

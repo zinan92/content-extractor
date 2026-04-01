@@ -129,39 +129,88 @@ def create_claude_client(
 ) -> anthropic.Anthropic:
     """Create a configured Anthropic client.
 
-    Token resolution order:
+    Token resolution order (with 401 fallback):
     1. CLI Proxy API token files (``~/.cli-proxy-api/claude-*.json``)
     2. ``ANTHROPIC_API_KEY`` environment variable
 
-    Raises :class:`LLMConfigError` if no valid token is found or all tokens
-    are expired.
+    If a CLI Proxy token is found but returns 401, automatically falls back
+    to ANTHROPIC_API_KEY before raising.
+
+    Raises :class:`LLMConfigError` if no valid token is found.
     """
-    token = _load_token_from_cli_proxy(config_dir)
+    candidates: list[tuple[str, str]] = []
 
-    if token is not None:
-        return anthropic.Anthropic(api_key=token, max_retries=5)
+    proxy_token = _load_token_from_cli_proxy(config_dir)
+    if proxy_token is not None:
+        candidates.append(("cli-proxy", proxy_token))
 
-    # Check if there were expired-only tokens (no valid ones)
-    # to give a specific "expired" error message.
-    if _has_only_expired_tokens(config_dir):
+    env_key = os.environ.get("ANTHROPIC_API_KEY")
+    if env_key:
+        candidates.append(("env-ANTHROPIC_API_KEY", env_key))
+
+    if not candidates:
         msg = (
-            "All CLI Proxy API tokens are expired. "
-            "Run the CLI Proxy API refresh process to obtain a new token."
+            "No Claude API token found. Checked:\n"
+            "  1. CLI Proxy API files (~/.cli-proxy-api/claude-*.json)\n"
+            "  2. ANTHROPIC_API_KEY environment variable\n"
+            "Please configure one of these token sources.\n"
+            "  - Refresh CLI Proxy: open http://localhost:8317\n"
+            "  - Or set: export ANTHROPIC_API_KEY=sk-ant-..."
         )
         raise LLMConfigError(msg)
 
-    # Fallback to environment variable
-    env_key = os.environ.get("ANTHROPIC_API_KEY")
-    if env_key:
-        return anthropic.Anthropic(api_key=env_key, max_retries=5)
+    # Return a FallbackClient that tries candidates in order on 401
+    return _FallbackClient(candidates)
 
-    msg = (
-        "No Claude API token found. Checked:\n"
-        "  1. CLI Proxy API files (~/.cli-proxy-api/claude-*.json)\n"
-        "  2. ANTHROPIC_API_KEY environment variable\n"
-        "Please configure one of these token sources."
-    )
-    raise LLMConfigError(msg)
+
+class _FallbackClient:
+    """Wraps multiple Anthropic clients, falling back on AuthenticationError.
+
+    Avoids upfront ping validation — only falls back when a real call fails
+    with 401. Proxies attribute access to the active underlying client.
+    """
+
+    def __init__(self, candidates: list[tuple[str, str]]) -> None:
+        self._candidates = candidates
+        self._active_index = 0
+        self._clients = [
+            (source, anthropic.Anthropic(api_key=token, max_retries=5))
+            for source, token in candidates
+        ]
+
+    @property
+    def messages(self) -> "_FallbackMessages":
+        return _FallbackMessages(self)
+
+    def _call_with_fallback(self, method_name: str, *args: object, **kwargs: object) -> object:
+        last_error: Exception | None = None
+        for i in range(self._active_index, len(self._clients)):
+            source, client = self._clients[i]
+            try:
+                method = getattr(client.messages, method_name)
+                result = method(*args, **kwargs)
+                self._active_index = i  # remember which worked
+                return result
+            except anthropic.AuthenticationError as exc:
+                logger.warning("Token from %s returned 401, trying next source", source)
+                last_error = exc
+                continue
+        msg = (
+            f"All token sources returned 401. Last error: {last_error}\n"
+            "Refresh CLI Proxy: open http://localhost:8317\n"
+            "Or set: export ANTHROPIC_API_KEY=sk-ant-..."
+        )
+        raise LLMConfigError(msg)
+
+
+class _FallbackMessages:
+    """Proxy for client.messages that routes through fallback logic."""
+
+    def __init__(self, parent: _FallbackClient) -> None:
+        self._parent = parent
+
+    def create(self, **kwargs: object) -> object:
+        return self._parent._call_with_fallback("create", **kwargs)
 
 
 def _has_only_expired_tokens(config_dir: Path | None = None) -> bool:

@@ -89,6 +89,7 @@ def _render_structured_text(
     item_comments: int = 0,
     item_shares: int = 0,
     analysis: AnalysisResult | None = None,
+    structured_transcript: str | None = None,
 ) -> str:
     """Render structured_text.md in D-04 report format.
 
@@ -144,6 +145,9 @@ def _render_structured_text(
     else:
         analysis_text = "No analysis available."
 
+    # Use structured transcript if available, fall back to raw text
+    content_section = structured_transcript if structured_transcript else result.raw_text
+
     return (
         f"{header}"
         f"\n"
@@ -155,9 +159,9 @@ def _render_structured_text(
         f"\n"
         f"{takeaway_lines}\n"
         f"\n"
-        f"## Full Transcript/Content\n"
+        f"## Content\n"
         f"\n"
-        f"{result.raw_text}\n"
+        f"{content_section}\n"
         f"\n"
         f"## Analysis\n"
         f"\n"
@@ -178,6 +182,7 @@ def write_extraction_output(
     force: bool = False,
     analysis: AnalysisResult | None = None,
     analysis_degraded: bool = False,
+    structured_transcript: str | None = None,
 ) -> bool:
     """Write all extraction output files to content_dir.
 
@@ -231,6 +236,7 @@ def write_extraction_output(
         item_comments=content_item.comments,
         item_shares=content_item.shares,
         analysis=effective_analysis,
+        structured_transcript=structured_transcript,
     )
     write_text_atomic(content_dir / "structured_text.md", md_text)
 

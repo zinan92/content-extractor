@@ -15,7 +15,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from content_extractor.analysis import AnalysisError, analyze_content
+from content_extractor.analysis import AnalysisError, analyze_content, restructure_transcript
 from content_extractor.config import ExtractorConfig
 from content_extractor.loader import load_content_item
 from content_extractor.models import AnalysisResult, ExtractionResult
@@ -70,6 +70,22 @@ def extract_content(
     # Run extraction
     result = adapter.extract(content_dir, config)
 
+    # Run LLM transcript restructuring
+    structured_transcript = None
+    try:
+        structured_transcript = restructure_transcript(
+            raw_text=result.raw_text,
+            config=config,
+        )
+        if structured_transcript:
+            logger.info("Transcript restructured successfully for %s", result.content_id)
+    except Exception as exc:
+        print(
+            f"⚠️  Transcript restructuring failed for {result.content_id}: {exc}\n"
+            f"   Raw transcript will be used instead.",
+            file=sys.stderr,
+        )
+
     # Run LLM analysis
     analysis_degraded = False
     try:
@@ -97,6 +113,7 @@ def extract_content(
         force=config.force_reprocess,
         analysis=analysis,
         analysis_degraded=analysis_degraded,
+        structured_transcript=structured_transcript,
     )
 
     return result
