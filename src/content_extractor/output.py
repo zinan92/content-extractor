@@ -234,6 +234,33 @@ def write_extraction_output(
     )
     write_text_atomic(content_dir / "structured_text.md", md_text)
 
+    # extractor_output.json — rewriter-compatible handoff format
+    extractor_output = {
+        "content_id": result.content_id,
+        "source_platform": content_item.platform,
+        "title": content_item.title,
+        "transcript": result.raw_text,
+        "key_points": list(effective_analysis.takeaways),
+        "visual_descriptions": [
+            desc.description for desc in result.media_descriptions
+        ],
+        "metadata": {
+            "duration_seconds": int(result.quality.processing_time_seconds) if result.transcript else None,
+            "publish_date": content_item.publish_time[:10] if content_item.publish_time else None,
+            "engagement": {
+                "views": content_item.views,
+                "likes": content_item.likes,
+                "comments": content_item.comments,
+                "shares": content_item.shares,
+                "collects": content_item.collects,
+            },
+        },
+    }
+    write_json_atomic(
+        content_dir / "extractor_output.json",
+        orjson.dumps(extractor_output, option=orjson.OPT_INDENT_2),
+    )
+
     # extraction_status.json — signals degraded extraction to downstream tools
     status_data = orjson.dumps(
         {
