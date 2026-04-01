@@ -71,6 +71,7 @@ def extract_content(
     result = adapter.extract(content_dir, config)
 
     # Run LLM analysis
+    analysis_degraded = False
     try:
         analysis = analyze_content(
             raw_text=result.raw_text,
@@ -79,11 +80,12 @@ def extract_content(
             config=config,
         )
     except AnalysisError as exc:
-        logger.warning(
-            "Analysis failed for %s, using placeholder: %s",
-            result.content_id,
-            exc,
+        print(
+            f"⚠️  LLM analysis failed for {result.content_id}: {exc}\n"
+            f"   Transcript extracted successfully, but summary/takeaways will be empty.",
+            file=sys.stderr,
         )
+        analysis_degraded = True
         analysis = AnalysisResult(
             content_id=result.content_id,
             content_type=result.content_type,
@@ -91,7 +93,10 @@ def extract_content(
 
     # Write output files
     write_extraction_output(
-        content_dir, result, item, force=config.force_reprocess, analysis=analysis
+        content_dir, result, item,
+        force=config.force_reprocess,
+        analysis=analysis,
+        analysis_degraded=analysis_degraded,
     )
 
     return result

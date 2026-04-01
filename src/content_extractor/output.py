@@ -177,6 +177,7 @@ def write_extraction_output(
     *,
     force: bool = False,
     analysis: AnalysisResult | None = None,
+    analysis_degraded: bool = False,
 ) -> bool:
     """Write all extraction output files to content_dir.
 
@@ -184,7 +185,8 @@ def write_extraction_output(
 
     When *analysis* is provided, writes real analysis data; otherwise writes
     a placeholder. When force=True, clears the marker and re-writes all
-    files (FOUND-05).
+    files (FOUND-05). When *analysis_degraded* is True, writes an
+    extraction_status.json signaling that LLM analysis was skipped.
     """
     if is_extracted(content_dir) and not force:
         return False
@@ -231,6 +233,17 @@ def write_extraction_output(
         analysis=effective_analysis,
     )
     write_text_atomic(content_dir / "structured_text.md", md_text)
+
+    # extraction_status.json — signals degraded extraction to downstream tools
+    status_data = orjson.dumps(
+        {
+            "content_id": result.content_id,
+            "transcript": "ok",
+            "analysis": "degraded" if analysis_degraded else "ok",
+        },
+        option=orjson.OPT_INDENT_2,
+    )
+    write_json_atomic(content_dir / "extraction_status.json", status_data)
 
     mark_complete(content_dir)
     return True
