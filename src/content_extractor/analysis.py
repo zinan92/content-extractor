@@ -1,11 +1,11 @@
 """LLM-powered content analysis module.
 
-Sends extracted text to Claude and returns a structured AnalysisResult
-with topics, viewpoints, sentiment, and takeaways.
+Sends extracted text to Claude (via CLI Proxy API or direct Anthropic API)
+and returns a structured AnalysisResult with topics, viewpoints, sentiment,
+and takeaways. Also provides transcript restructuring for human-readable output.
 
 Usage:
-    from content_extractor.analysis import analyze_content
-    result = analyze_content("article text...", content_id="x", content_type="article")
+    from content_extractor.analysis import analyze_content, restructure_transcript
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import logging
 import orjson
 
 from content_extractor.config import ExtractorConfig
-from content_extractor.llm import create_claude_client
+from content_extractor.llm import LLMAPIError, llm_chat
 from content_extractor.models import AnalysisResult, SentimentResult
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class AnalysisError(Exception):
 
 
 # ---------------------------------------------------------------------------
-# Prompt
+# Prompts
 # ---------------------------------------------------------------------------
 
 _ANALYSIS_PROMPT = """\
@@ -82,7 +82,7 @@ def restructure_transcript(
 ) -> str | None:
     """Restructure raw Whisper transcript into readable, structured markdown.
 
-    Returns the structured text, or None if LLM call fails.
+    Returns the structured text, or None if LLM call fails or text is too long.
     """
     config = config if config is not None else ExtractorConfig()
 
@@ -97,31 +97,18 @@ def restructure_transcript(
             len(raw_text), max_chars,
         )
         return None
-    text_to_process = raw_text
-
-    client = create_claude_client(config)
 
     try:
-        response = client.messages.create(
+        structured = llm_chat(
             model=config.claude_model,
+            messages=[{"role": "user", "content": raw_text}],
+            system=_RESTRUCTURE_PROMPT,
             max_tokens=8192,
             temperature=0.0,
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"{_RESTRUCTURE_PROMPT}\n\n---\n\n{text_to_process}",
-                }
-            ],
         )
     except Exception as exc:
         logger.warning("Transcript restructuring failed: %s", exc)
         return None
-
-    structured = ""
-    for block in response.content:
-        if getattr(block, "type", None) == "text":
-            structured = block.text
-            break
 
     return structured if structured.strip() else None
 
@@ -133,62 +120,25 @@ def analyze_content(
     content_type: str,
     config: ExtractorConfig | None = None,
 ) -> AnalysisResult:
-    """Analyze extracted text via Claude and return structured AnalysisResult.
-
-    Parameters
-    ----------
-    raw_text:
-        The extracted text to analyze.
-    content_id:
-        Identifier for the content item.
-    content_type:
-        Type of content (video, article, image, gallery).
-    config:
-        Optional ExtractorConfig with LLM settings.
-
-    Returns
-    -------
-    AnalysisResult
-        Structured analysis with topics, viewpoints, sentiment, takeaways.
-
-    Raises
-    ------
-    AnalysisError
-        If the LLM API call fails.
-    """
+    """Analyze extracted text via Claude and return structured AnalysisResult."""
     config = config if config is not None else ExtractorConfig()
 
-    # Empty input -- return fallback without calling LLM
     if not raw_text or not raw_text.strip():
         return AnalysisResult(
             content_id=content_id,
             content_type=content_type,
         )
 
-    client = create_claude_client(config)
-
-    # Call LLM
     try:
-        response = client.messages.create(
+        response_text = llm_chat(
             model=config.claude_model,
+            messages=[{"role": "user", "content": raw_text}],
+            system=_ANALYSIS_PROMPT,
             max_tokens=config.claude_max_tokens,
             temperature=config.claude_temperature,
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"{_ANALYSIS_PROMPT}\n\n---\n\n{raw_text}",
-                }
-            ],
         )
     except Exception as exc:
         raise AnalysisError(f"LLM API call failed: {exc}") from exc
-
-    # Extract text from response
-    response_text = ""
-    for block in response.content:
-        if getattr(block, "type", None) == "text":
-            response_text = block.text
-            break
 
     # Parse JSON response
     try:
@@ -203,7 +153,6 @@ def analyze_content(
             content_type=content_type,
         )
 
-    # Map parsed dict to AnalysisResult
     sentiment_data = parsed.get("sentiment")
     sentiment = None
     if isinstance(sentiment_data, dict):

@@ -1,13 +1,16 @@
 """LLM client infrastructure for content-extractor.
 
-Provides token loading from CLI Proxy API files, environment variable fallback,
-expiration checking, and a client factory that configures the Anthropic SDK
-with automatic rate-limit retry.
+Routes through CLI Proxy API (localhost:8317) which exposes an OpenAI-compatible
+interface backed by your Claude Max subscription. Falls back to direct Anthropic
+API if ANTHROPIC_API_KEY is set.
 
 Usage:
-    from content_extractor.llm import create_claude_client
-    client = create_claude_client()
-    # client is a configured anthropic.Anthropic instance
+    from content_extractor.llm import llm_chat
+    text = llm_chat(
+        model="claude-sonnet-4-20250514",
+        messages=[{"role": "user", "content": "hello"}],
+        max_tokens=100,
+    )
 """
 
 from __future__ import annotations
@@ -15,13 +18,9 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime, timezone
 from pathlib import Path
 
-import anthropic
 from pydantic import BaseModel, ConfigDict
-
-from content_extractor.config import ExtractorConfig
 
 logger = logging.getLogger(__name__)
 
@@ -35,211 +34,193 @@ class LLMError(Exception):
 
 
 class LLMConfigError(LLMError):
-    """No valid token found, token disabled, or token expired."""
-
-
-class LLMRateLimitError(LLMError):
-    """API returned 429 — rate limit exceeded."""
+    """No valid token/client found."""
 
 
 class LLMAPIError(LLMError):
-    """Other API failures (500, network errors, etc.)."""
+    """API call failed."""
 
 
 # ---------------------------------------------------------------------------
-# Token file model
+# CLI Proxy API config
 # ---------------------------------------------------------------------------
 
-
-class _CLIProxyToken(BaseModel):
-    """Frozen Pydantic model for CLI Proxy API token files."""
-
-    model_config = ConfigDict(frozen=True)
-
-    access_token: str
-    disabled: bool = False
-    email: str = ""
-    expired: str = ""  # ISO 8601 datetime string
-    type: str = "claude"
-
-
-# ---------------------------------------------------------------------------
-# Token loading
-# ---------------------------------------------------------------------------
-
+_DEFAULT_PROXY_URL = "http://localhost:8317/v1"
 _DEFAULT_CONFIG_DIR = Path.home() / ".cli-proxy-api"
+_DEFAULT_CONFIG_FILE = Path("/opt/homebrew/etc/cliproxyapi.conf")
 
 
-def _load_token_from_cli_proxy(
-    config_dir: Path | None = None,
-) -> str | None:
-    """Load a valid access token from CLI Proxy API token files.
+def _load_proxy_api_key() -> str | None:
+    """Load the client API key from cliproxyapi.conf.
 
-    Scans ``config_dir`` (default ``~/.cli-proxy-api``) for ``claude-*.json``
-    files.  Returns the first valid (non-disabled, non-expired, type=claude)
-    ``access_token``, or ``None`` if no valid token is found.
+    The proxy uses a separate client key (e.g. 'sk-cliproxy-wendy')
+    for authenticating requests from your code to the proxy server.
+    This is NOT the OAuth token — that's used internally by the proxy.
     """
-    directory = config_dir if config_dir is not None else _DEFAULT_CONFIG_DIR
-
-    if not directory.is_dir():
+    if not _DEFAULT_CONFIG_FILE.exists():
         return None
 
-    for token_path in sorted(directory.glob("claude-*.json")):
-        try:
-            raw = json.loads(token_path.read_text())
-            token = _CLIProxyToken.model_validate(raw)
-        except (json.JSONDecodeError, ValueError, OSError) as exc:
-            logger.warning("Skipping invalid token file %s: %s", token_path, exc)
-            continue
+    try:
+        import yaml  # noqa: F811
+    except ImportError:
+        # No yaml, parse manually
+        content = _DEFAULT_CONFIG_FILE.read_text()
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped.startswith('- "sk-') or stripped.startswith("- 'sk-"):
+                return stripped.strip('- "\'')
+        return None
 
-        if token.disabled:
-            logger.debug("Skipping disabled token: %s", token_path.name)
-            continue
-
-        if token.type != "claude":
-            logger.debug("Skipping non-claude token: %s", token_path.name)
-            continue
-
-        if token.expired:
-            try:
-                expiry = datetime.fromisoformat(token.expired)
-                if expiry < datetime.now(timezone.utc):
-                    logger.debug("Skipping expired token: %s", token_path.name)
-                    continue
-            except ValueError:
-                logger.warning(
-                    "Unparseable expiry in %s: %s", token_path.name, token.expired
-                )
-                continue
-
-        return token.access_token
+    try:
+        raw = yaml.safe_load(_DEFAULT_CONFIG_FILE.read_text())
+        keys = raw.get("api-keys", [])
+        if keys:
+            return keys[0]
+    except Exception as exc:
+        logger.warning("Failed to parse cliproxyapi.conf: %s", exc)
 
     return None
 
 
 # ---------------------------------------------------------------------------
-# Client factory
+# Public API — single function, no SDK confusion
 # ---------------------------------------------------------------------------
 
 
-def create_claude_client(
-    config: ExtractorConfig | None = None,
+def llm_chat(
     *,
-    config_dir: Path | None = None,
-) -> anthropic.Anthropic:
-    """Create a configured Anthropic client.
+    model: str = "claude-sonnet-4-20250514",
+    messages: list[dict[str, str]],
+    max_tokens: int = 4096,
+    temperature: float = 0.0,
+    system: str | None = None,
+) -> str:
+    """Send a chat completion request and return the response text.
 
-    Token resolution order (with 401 fallback):
-    1. CLI Proxy API token files (``~/.cli-proxy-api/claude-*.json``)
-    2. ``ANTHROPIC_API_KEY`` environment variable
+    Tries in order:
+    1. CLI Proxy API (localhost:8317, OpenAI-compatible) — uses your Claude Max sub
+    2. Direct Anthropic API (if ANTHROPIC_API_KEY is set)
 
-    If a CLI Proxy token is found but returns 401, automatically falls back
-    to ANTHROPIC_API_KEY before raising.
-
-    Raises :class:`LLMConfigError` if no valid token is found.
+    Returns the assistant's response text.
+    Raises LLMConfigError if no client is available, LLMAPIError on failure.
     """
-    candidates: list[tuple[str, str]] = []
+    # Prepend system message if provided (OpenAI format)
+    full_messages = list(messages)
+    if system:
+        full_messages = [{"role": "system", "content": system}] + full_messages
 
-    proxy_token = _load_token_from_cli_proxy(config_dir)
-    if proxy_token is not None:
-        candidates.append(("cli-proxy", proxy_token))
+    # Try CLI Proxy API first
+    proxy_key = _load_proxy_api_key()
+    if proxy_key:
+        try:
+            return _call_openai_compat(
+                base_url=_DEFAULT_PROXY_URL,
+                api_key=proxy_key,
+                model=model,
+                messages=full_messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+        except Exception as exc:
+            logger.warning("CLI Proxy API failed: %s. Trying fallback.", exc)
 
+    # Fallback: direct Anthropic API
     env_key = os.environ.get("ANTHROPIC_API_KEY")
     if env_key:
-        candidates.append(("env-ANTHROPIC_API_KEY", env_key))
-
-    if not candidates:
-        msg = (
-            "No Claude API token found. Checked:\n"
-            "  1. CLI Proxy API files (~/.cli-proxy-api/claude-*.json)\n"
-            "  2. ANTHROPIC_API_KEY environment variable\n"
-            "Please configure one of these token sources.\n"
-            "  - Refresh CLI Proxy: open http://localhost:8317\n"
-            "  - Or set: export ANTHROPIC_API_KEY=sk-ant-..."
-        )
-        raise LLMConfigError(msg)
-
-    # Return a FallbackClient that tries candidates in order on 401
-    return _FallbackClient(candidates)
-
-
-class _FallbackClient:
-    """Wraps multiple Anthropic clients, falling back on AuthenticationError.
-
-    Avoids upfront ping validation — only falls back when a real call fails
-    with 401. Proxies attribute access to the active underlying client.
-    """
-
-    def __init__(self, candidates: list[tuple[str, str]]) -> None:
-        self._candidates = candidates
-        self._active_index = 0
-        self._clients = [
-            (source, anthropic.Anthropic(api_key=token, max_retries=5))
-            for source, token in candidates
-        ]
-
-    @property
-    def messages(self) -> "_FallbackMessages":
-        return _FallbackMessages(self)
-
-    def _call_with_fallback(self, method_name: str, *args: object, **kwargs: object) -> object:
-        last_error: Exception | None = None
-        for i in range(self._active_index, len(self._clients)):
-            source, client = self._clients[i]
-            try:
-                method = getattr(client.messages, method_name)
-                result = method(*args, **kwargs)
-                self._active_index = i  # remember which worked
-                return result
-            except anthropic.AuthenticationError as exc:
-                logger.warning("Token from %s returned 401, trying next source", source)
-                last_error = exc
-                continue
-        msg = (
-            f"All token sources returned 401. Last error: {last_error}\n"
-            "Refresh CLI Proxy: open http://localhost:8317\n"
-            "Or set: export ANTHROPIC_API_KEY=sk-ant-..."
-        )
-        raise LLMConfigError(msg)
-
-
-class _FallbackMessages:
-    """Proxy for client.messages that routes through fallback logic."""
-
-    def __init__(self, parent: _FallbackClient) -> None:
-        self._parent = parent
-
-    def create(self, **kwargs: object) -> object:
-        return self._parent._call_with_fallback("create", **kwargs)
-
-
-def _has_only_expired_tokens(config_dir: Path | None = None) -> bool:
-    """Return True if token files exist but ALL are expired (not disabled)."""
-    directory = config_dir if config_dir is not None else _DEFAULT_CONFIG_DIR
-
-    if not directory.is_dir():
-        return False
-
-    found_any = False
-    for token_path in sorted(directory.glob("claude-*.json")):
         try:
-            raw = json.loads(token_path.read_text())
-            token = _CLIProxyToken.model_validate(raw)
-        except (json.JSONDecodeError, ValueError, OSError):
-            continue
+            return _call_anthropic_direct(
+                api_key=env_key,
+                model=model,
+                messages=messages,  # Original messages without system prepended
+                system=system,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+        except Exception as exc:
+            raise LLMAPIError(f"Anthropic API failed: {exc}") from exc
 
-        if token.disabled or token.type != "claude":
-            continue
+    msg = (
+        "No LLM client available. Checked:\n"
+        "  1. CLI Proxy API (localhost:8317) — is cliproxyapi running?\n"
+        "     Start: /opt/homebrew/bin/cliproxyapi\n"
+        "     Login: /opt/homebrew/bin/cliproxyapi -claude-login\n"
+        "  2. ANTHROPIC_API_KEY environment variable — not set\n"
+    )
+    raise LLMConfigError(msg)
 
-        found_any = True
-        if token.expired:
-            try:
-                expiry = datetime.fromisoformat(token.expired)
-                if expiry >= datetime.now(timezone.utc):
-                    return False  # At least one is still valid
-            except ValueError:
-                continue
-        else:
-            return False  # No expiry means it's valid
 
-    return found_any
+def _call_openai_compat(
+    *,
+    base_url: str,
+    api_key: str,
+    model: str,
+    messages: list[dict[str, str]],
+    max_tokens: int,
+    temperature: float,
+) -> str:
+    """Call an OpenAI-compatible API endpoint."""
+    from openai import OpenAI
+
+    client = OpenAI(base_url=base_url, api_key=api_key)
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+    return response.choices[0].message.content or ""
+
+
+def create_claude_client(
+    config: "ExtractorConfig | None" = None,
+    *,
+    config_dir: Path | None = None,
+) -> object:
+    """Legacy compatibility shim for vision.py and gallery.py.
+
+    These modules use multimodal Anthropic-specific features (base64 images)
+    that can't go through the OpenAI-compat proxy. Returns an Anthropic client
+    if ANTHROPIC_API_KEY is available, otherwise raises LLMConfigError with
+    instructions.
+    """
+    env_key = os.environ.get("ANTHROPIC_API_KEY")
+    if env_key:
+        import anthropic
+        return anthropic.Anthropic(api_key=env_key, max_retries=5)
+
+    # For vision/gallery, we can't use the OpenAI-compat proxy (no multimodal support)
+    msg = (
+        "Vision/gallery extraction requires ANTHROPIC_API_KEY (direct API access).\n"
+        "The CLI Proxy API only supports text chat, not multimodal.\n"
+        "Set: export ANTHROPIC_API_KEY=sk-ant-api03-..."
+    )
+    raise LLMConfigError(msg)
+
+
+def _call_anthropic_direct(
+    *,
+    api_key: str,
+    model: str,
+    messages: list[dict[str, str]],
+    system: str | None,
+    max_tokens: int,
+    temperature: float,
+) -> str:
+    """Call Anthropic Messages API directly."""
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=api_key, max_retries=5)
+    kwargs: dict = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "messages": messages,
+    }
+    if system:
+        kwargs["system"] = system
+
+    response = client.messages.create(**kwargs)
+    for block in response.content:
+        if getattr(block, "type", None) == "text":
+            return block.text
+    return ""
