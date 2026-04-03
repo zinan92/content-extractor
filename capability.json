@@ -1,0 +1,81 @@
+{
+  "id": "extract",
+  "name": "Content Extractor",
+  "version": "0.1.0",
+  "description": "Multi-modal content extraction — video transcription, image OCR, article cleaning, gallery narrative synthesis",
+
+  "entrypoint": "content-extractor extract",
+  "skill_path": "SKILL.md",
+
+  "install": {
+    "method": "pip",
+    "command": "pip install -e ."
+  },
+  "update": {
+    "method": "git-pull"
+  },
+
+  "dependencies": {
+    "system": ["python3", "ffmpeg"],
+    "python": ">=3.13",
+    "node": null
+  },
+
+  "input_types": [
+    {
+      "type": "content-directory",
+      "description": "Directory with content_item.json from content-downloader",
+      "examples": ["./output/douyin/user/video123/"]
+    },
+    {
+      "type": "bare-media-file",
+      "description": "Video or audio file (auto-wrapped into temporary content directory)",
+      "examples": ["./video.mp4", "./recording.mp3"]
+    }
+  ],
+  "output_types": [
+    {
+      "type": "transcript-json",
+      "description": "Timestamped transcription with per-segment confidence and hallucination flags",
+      "structure": "transcript.json"
+    },
+    {
+      "type": "analysis-json",
+      "description": "Topics, viewpoints, sentiment, and takeaways",
+      "structure": "analysis.json"
+    },
+    {
+      "type": "structured-text",
+      "description": "Human-readable research brief in Markdown",
+      "structure": "structured_text.md"
+    },
+    {
+      "type": "extractor-output",
+      "description": "Rewriter-compatible handoff format",
+      "structure": "extractor_output.json"
+    },
+    {
+      "type": "extraction-status",
+      "description": "Degradation signaling (ok/degraded per component)",
+      "structure": "extraction_status.json"
+    }
+  ],
+
+  "resources": {
+    "scripts": null,
+    "references": "references/",
+    "assets": null,
+    "examples": null
+  },
+
+  "tags": ["extract", "transcription", "whisper", "ocr", "vision", "article", "multimodal"],
+
+  "workflow": {
+    "before": ["download"],
+    "after": ["rewrite", "intelligence"]
+  },
+
+  "adapters": {
+    "content_types": ["video", "image", "article", "gallery"]
+  }
+}
