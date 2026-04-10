@@ -11,6 +11,7 @@ Usage:
 from __future__ import annotations
 
 import logging
+import re
 
 import orjson
 
@@ -28,6 +29,57 @@ logger = logging.getLogger(__name__)
 
 class AnalysisError(Exception):
     """Raised when LLM analysis fails (API error, timeout, etc.)."""
+
+
+# ---------------------------------------------------------------------------
+# JSON extraction helpers
+# ---------------------------------------------------------------------------
+
+_FENCE_RE = re.compile(r"```(?:json)?\s*\n?(.*?)\n?\s*```", re.DOTALL)
+
+
+def _extract_json(text: str) -> dict | None:
+    """Extract a JSON object from LLM response text.
+
+    Handles three common LLM response patterns:
+    1. Clean JSON: ``{"topics": [...]}``
+    2. Markdown-fenced: ``````json\\n{...}\\n``````
+    3. JSON embedded in prose: ``Here is the analysis:\\n{...}``
+
+    Returns the parsed dict, or None if extraction fails.
+    """
+    text = text.strip()
+
+    # Try direct parse first (cheapest path)
+    try:
+        result = orjson.loads(text)
+        if isinstance(result, dict):
+            return result
+    except (orjson.JSONDecodeError, ValueError, TypeError):
+        pass
+
+    # Strip markdown fences
+    fence_match = _FENCE_RE.search(text)
+    if fence_match:
+        try:
+            result = orjson.loads(fence_match.group(1).strip())
+            if isinstance(result, dict):
+                return result
+        except (orjson.JSONDecodeError, ValueError, TypeError):
+            pass
+
+    # Find first { ... last } as a fallback
+    first_brace = text.find("{")
+    last_brace = text.rfind("}")
+    if first_brace != -1 and last_brace > first_brace:
+        try:
+            result = orjson.loads(text[first_brace : last_brace + 1])
+            if isinstance(result, dict):
+                return result
+        except (orjson.JSONDecodeError, ValueError, TypeError):
+            pass
+
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -140,10 +192,9 @@ def analyze_content(
     except Exception as exc:
         raise AnalysisError(f"LLM API call failed: {exc}") from exc
 
-    # Parse JSON response
-    try:
-        parsed = orjson.loads(response_text)
-    except (orjson.JSONDecodeError, ValueError, TypeError):
+    # Parse JSON response — LLM may wrap in markdown fences or add extra text
+    parsed = _extract_json(response_text)
+    if parsed is None:
         logger.warning(
             "Failed to parse analysis JSON for %s, returning fallback",
             content_id,
