@@ -119,9 +119,12 @@ content_item.json ──▶ loader ──▶ router ──▶ adapter ──▶ 
                    article     image       video          gallery
                    trafilatura Claude      FFmpeg         per-image
                    HTML→MD     vision      ↓              Claude vision
-                                           faster-whisper ↓
-                                           ↓              narrative
-                                           VAD + 幻觉检测  synthesis
+                                           whisper        ↓
+                                           (mlx on Apple  narrative
+                                            Silicon, else  synthesis
+                                            faster-whisper)
+                                           ↓
+                                           VAD + 幻觉检测
                                                    │
                                                    ▼
                                            analysis (Claude LLM)
@@ -163,7 +166,7 @@ content-extractor extract-batch ./path/to/output_dir/
 | 功能 | 说明 | 状态 |
 |------|------|------|
 | 裸文件直接提取 | 传入 .mp4/.mp3 等文件，自动包装为 ContentItem 后提取 | ✅ |
-| 视频转录 | faster-whisper turbo + 中文显式设置 + 时间戳 | ✅ |
+| 视频转录 | Whisper turbo + 中文显式设置 + 时间戳（Apple Silicon 自动用 mlx-whisper GPU） | ✅ |
 | 音频预处理 | FFmpeg loudnorm 音量标准化 (-16 LUFS) | ✅ |
 | VAD 过滤 | Silero VAD 过滤非语音段，speech_ratio < 10% 自动跳过 | ✅ |
 | 幻觉检测 | 置信度/字符速率/重复句三重检测 + hallucination_warnings | ✅ |
@@ -182,7 +185,7 @@ content-extractor extract-batch ./path/to/output_dir/
 |------|------|------|
 | 运行时 | Python 3.13+ | 核心语言 |
 | 数据模型 | Pydantic 2.12+ | 输入/输出 schema，frozen immutable models |
-| 视频转录 | faster-whisper 1.2+ | CTranslate2 后端，turbo 模型，本地运行 |
+| 视频转录 | faster-whisper 1.2+ / mlx-whisper 0.4+ | 双后端：Apple Silicon 自动用 mlx-whisper (Metal GPU, ~15x 实时)，其他平台用 faster-whisper (CPU int8, ~1x 实时) |
 | 音频处理 | FFmpeg 7.x | 音频提取 + 音量标准化 |
 | 图片分析 | anthropic SDK 0.86+ | Claude vision OCR + 描述 |
 | 文章清洗 | trafilatura 2.0 | HTML → Markdown (F1=0.96) |
@@ -228,6 +231,7 @@ content-extractor/
 | `--whisper-model` | Whisper 模型选择 | `turbo` |
 | `--force` | 强制重新提取已完成的内容 | `false` |
 | `ANTHROPIC_API_KEY` | Claude API 密钥 (CLI Proxy API 优先) | — |
+| `CONTENT_EXTRACTOR_WHISPER_BACKEND` | 强制指定 Whisper 后端 (`mlx` / `faster`) | 自动检测 |
 
 LLM 内部参数（model、temperature、max_tokens）已硬编码为最佳默认值，不暴露给用户。
 
