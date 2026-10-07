@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **已合并进 [douyin-teardown](https://github.com/zinan92/douyin-teardown)，这个仓库不再更新。**
+> content-extractor 的代码整份在那里的 `content_extractor/` 目录里，`content-extractor` 命令装好后照样能用；以后的修复只在那边做。
+> 这里仍然可以 clone 和安装（停在归档时的版本）。
+
 <div align="center">
 
 # content-extractor
